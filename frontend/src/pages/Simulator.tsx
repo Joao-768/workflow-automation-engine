@@ -9,6 +9,7 @@ const EVENTOS = [
 
 export default function Simulator() {
     const [resultado, setResultado] = useState<unknown>(null)
+    const [erro, setErro] = useState('')
 
     function simular(type: string, data: Record<string, unknown>) {
         fetch('http://localhost:3000/events', {
@@ -16,13 +17,18 @@ export default function Simulator() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type, data }),
         })
-            .then(res => res.json())
-            .then(json => setResultado(json))
+            .then(res => {
+                if (!res.ok) throw new Error('Erro ao simular o evento')
+                return res.json()
+            })
+            .then(json => { setResultado(json); setErro('') })
+            .catch(err => setErro(err.message))
     }
 
     return (
         <>
             <h2>Event Simulator</h2>
+            {erro && <p>{erro}</p>}
             {EVENTOS.map((evento) => (
                 <button key={evento.type} onClick={() => simular(evento.type, evento.data)}>
                     Simulate {evento.label}

@@ -14,13 +14,17 @@ export default function WorkflowForm() {
     const [actionType, setActionType] = useState(ACTIONS[0])
     const [actionConfig, setActionConfig] = useState('{}')
     const [conditions, setConditions] = useState('')
+    const [erro, setErro] = useState('')
 
     const { id } = useParams()
 
     useEffect(() => {
         if (!id) return
         fetch(`http://localhost:3000/workflows/${id}`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Erro ao carregar o workflow')
+                return res.json()
+            })
             .then(w => {
                 setName(w.name)
                 setDescription(w.description ?? '')
@@ -29,29 +33,48 @@ export default function WorkflowForm() {
                 setActionConfig(JSON.stringify(w.action_config))
                 setConditions(w.conditions ? JSON.stringify(w.conditions) : '')
             })
+            .catch(err => setErro(err.message))
     }, [id])
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
+        setErro('')
+
+        let body
+        try {
+            body = JSON.stringify({
+                name,
+                description,
+                trigger_type: triggerType,
+                action_type: actionType,
+                action_config: JSON.parse(actionConfig),
+                conditions: conditions.trim() === '' ? null : JSON.parse(conditions),
+            })
+        } catch {
+            return setErro('JSON inválido nos campos de configuração ou condição')
+        }
+
         fetch(
             id ? `http://localhost:3000/workflows/${id}` : 'http://localhost:3000/workflows',
             {
-                    method: id ? 'PUT' : 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                    name,
-                    description,
-                    trigger_type: triggerType,
-                    action_type: actionType,
-                    action_config: JSON.parse(actionConfig),
-                    conditions: conditions.trim() === '' ? null : JSON.parse(conditions),
-                }),
-            }).then(() => navigate('/'))
+                method: id ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body,
+            })
+            .then(async res => {
+                if (!res.ok) {
+                    const data = await res.json()
+                    throw new Error(data.error)
+                }
+                navigate('/')
+            })
+            .catch(err => setErro(err.message))
     }
 
     return (
         <>
             <h2>{id ? 'Editar' : 'Novo'} Workflow</h2>
+            {erro && <p>{erro}</p>}
             <form onSubmit={handleSubmit}>
                 <div>
                     <label>Nome </label>
