@@ -29,7 +29,7 @@ export default function WorkflowList() {
             <ul>
                 {workflows.map((workflow) => (
                     <li key={workflow.id}>
-                        {workflow.name} — {workflow.trigger_type} → {workflow.action_type}
+                        {workflow.name} ({workflow.trigger_type} &gt; {workflow.action_type})
                         <Link to={`/workflows/${workflow.id}/edit`}>Editar</Link>
                         <button onClick={() => handleDelete(workflow.id)}>Apagar</button>
                         <button onClick={() => handleToggle(workflow.id)}>
