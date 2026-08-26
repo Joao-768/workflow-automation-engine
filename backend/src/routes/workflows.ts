@@ -1,7 +1,36 @@
-import { Router } from 'express'
+import { Router, type Request, type Response, type NextFunction } from 'express'
 import { pool } from '../db'
 
 const router = Router();
+
+const TRIGGERS = ['order.created', 'user.created', 'payment.completed', 'form.submitted']
+const ACTIONS = ['send_notification', 'send_email', 'create_record']
+
+function validateWorkflow(req: Request, res: Response, next: NextFunction) {
+    const { name, description, trigger_type, action_type, action_config, conditions } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ error: 'name is required' })
+    }
+
+    if (!trigger_type) {
+        return res.status(400).json({ error: 'trigger_type is required' })
+    }
+
+    if (!TRIGGERS.includes(trigger_type)) {
+        return res.status(400).json({ error: `invalid trigger_type, must be one of: ${TRIGGERS.join(', ')}` })
+    }
+
+    if (!action_type) {
+        return res.status(400).json({ error: 'action_type is required' })
+    }
+
+    if (!ACTIONS.includes(action_type)) {
+        return res.status(400).json({ error: `invalid action_type, must be one of: ${ACTIONS.join(', ')}` })
+    }
+
+    next()
+}
 
 router.get('/', async (req, res) => {
     try {
@@ -12,11 +41,11 @@ router.get('/', async (req, res) => {
     }
 })
 
-router.post('/', async (req, res) => {
+router.post('/', validateWorkflow, async (req, res) => {
     const { name, description, trigger_type, action_type, action_config, conditions } = req.body;
 
     try {
-        const result = await pool.query('INSERT INTO workflows (name, description, trigger_type, action_type, action_config, conditions) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [name, description, trigger_type, action_type, action_config, conditions])
+        const result = await pool.query('INSERT INTO workflows (name, description, trigger_type, action_type, action_config, conditions) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *', [name, description, trigger_type, action_type, action_config ?? {}, conditions])
         res.json(result.rows[0])
     } catch (err) {
         res.status(500).json({ error: err})
@@ -35,7 +64,7 @@ router.get('/:id', async (req, res) => {
     }
 })
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', validateWorkflow, async (req, res) => {
     const { id } = req.params;
     const { name, description, trigger_type, action_type, action_config, conditions } = req.body;
     
