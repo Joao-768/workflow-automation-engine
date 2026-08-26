@@ -22,7 +22,7 @@ export default function Register() {
         })
             .then(data => {
                 login(data.token, data.user)
-                navigate('/')
+                navigate('/dashboard')
             })
             .catch(err => setError(err.message))
     }

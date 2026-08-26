@@ -160,3 +160,148 @@ pre {
 b {
     color: var(--accent);
 }
+
+h3 {
+    color: var(--text-h);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 32px 0 12px;
+}
+
+h4 {
+    color: var(--text-h);
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 6px;
+}
+
+.stats {
+    display: flex;
+    gap: 12px;
+}
+
+.stat {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+}
+
+.stat .value {
+    display: block;
+    color: var(--accent);
+    font-size: 32px;
+    font-weight: 600;
+}
+
+.stat .label {
+    font-size: 14px;
+}
+
+dl {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 0 0 16px;
+}
+
+dt {
+    color: var(--text-h);
+    font-size: 13px;
+    margin-top: 12px;
+}
+
+dt:first-child {
+    margin-top: 0;
+}
+
+dd {
+    margin: 2px 0 0;
+}
+
+.landing .hero {
+    padding: 48px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.landing .hero h2 {
+    font-size: 36px;
+    margin-bottom: 12px;
+}
+
+.landing .hero p {
+    max-width: 480px;
+    margin-bottom: 24px;
+}
+
+.cta {
+    display: inline-block;
+    color: var(--bg);
+    background: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 12px 24px;
+}
+
+.cta:hover {
+    opacity: 0.85;
+}
+
+.flow {
+    display: inline-block;
+    text-align: center;
+}
+
+.flow-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 24px;
+}
+
+.flow-label {
+    display: block;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.flow-arrow {
+    padding: 6px 0;
+}
+
+.features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.feature {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+}
+
+.feature p {
+    font-size: 14px;
+}
+
+.cta-section {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+}
+
+.cta-section p {
+    margin-top: 16px;
+    font-size: 14px;
+}
+
+footer {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    font-size: 13px;
+}

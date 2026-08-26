@@ -21,7 +21,7 @@ export default function Login() {
         })
             .then(data => {
                 login(data.token, data.user)
-                navigate('/')
+                navigate('/dashboard')
             })
             .catch(err => setError(err.message))
     }

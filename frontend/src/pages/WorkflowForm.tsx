@@ -55,7 +55,7 @@ export default function WorkflowForm() {
             method: id ? 'PUT' : 'POST',
             body,
         })
-            .then(() => navigate('/'))
+            .then(() => navigate('/workflows'))
             .catch(err => setError(err.message))
     }
 
