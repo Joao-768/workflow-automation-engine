@@ -39,9 +39,16 @@ h2 {
 }
 
 nav {
+    display: flex;
+    align-items: center;
     border-bottom: 1px solid var(--border);
     padding-bottom: 12px;
     margin-bottom: 24px;
+}
+
+nav span {
+    margin-left: auto;
+    font-size: 14px;
 }
 
 nav a {

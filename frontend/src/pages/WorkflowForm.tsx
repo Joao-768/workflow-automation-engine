@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { api } from '../api'
 
 
 const TRIGGERS = ['order.created', 'user.created', 'payment.completed', 'form.submitted']
@@ -14,17 +15,13 @@ export default function WorkflowForm() {
     const [actionType, setActionType] = useState(ACTIONS[0])
     const [actionConfig, setActionConfig] = useState('{}')
     const [conditions, setConditions] = useState('')
-    const [erro, setErro] = useState('')
+    const [error, setError] = useState('')
 
     const { id } = useParams()
 
     useEffect(() => {
         if (!id) return
-        fetch(`http://localhost:3000/workflows/${id}`)
-            .then(res => {
-                if (!res.ok) throw new Error('Erro ao carregar o workflow')
-                return res.json()
-            })
+        api(`/workflows/${id}`)
             .then(w => {
                 setName(w.name)
                 setDescription(w.description ?? '')
@@ -33,12 +30,12 @@ export default function WorkflowForm() {
                 setActionConfig(JSON.stringify(w.action_config))
                 setConditions(w.conditions ? JSON.stringify(w.conditions) : '')
             })
-            .catch(err => setErro(err.message))
+            .catch(err => setError(err.message))
     }, [id])
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
-        setErro('')
+        setError('')
 
         let body
         try {
@@ -51,30 +48,21 @@ export default function WorkflowForm() {
                 conditions: conditions.trim() === '' ? null : JSON.parse(conditions),
             })
         } catch {
-            return setErro('JSON inválido nos campos de configuração ou condição')
+            return setError('JSON inválido nos campos de configuração ou condição')
         }
 
-        fetch(
-            id ? `http://localhost:3000/workflows/${id}` : 'http://localhost:3000/workflows',
-            {
-                method: id ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body,
-            })
-            .then(async res => {
-                if (!res.ok) {
-                    const data = await res.json()
-                    throw new Error(data.error)
-                }
-                navigate('/')
-            })
-            .catch(err => setErro(err.message))
+        api(id ? `/workflows/${id}` : '/workflows', {
+            method: id ? 'PUT' : 'POST',
+            body,
+        })
+            .then(() => navigate('/'))
+            .catch(err => setError(err.message))
     }
 
     return (
         <>
             <h2>{id ? 'Editar' : 'Novo'} Workflow</h2>
-            {erro && <p>{erro}</p>}
+            {error && <p>{error}</p>}
             <form onSubmit={handleSubmit}>
                 <div>
                     <label>Nome </label>

@@ -1,46 +1,35 @@
 import { useEffect, useState } from "react"
 import type { Workflow } from '../types'
 import { Link } from 'react-router-dom'
+import { api } from '../api'
 
 export default function WorkflowList() {
     const [workflows, setWorkflows] = useState<Workflow[]>([])
-    const [erro, setErro] = useState('')
+    const [error, setError] = useState('')
 
     useEffect(() => {
-        fetch('http://localhost:3000/workflows')
-            .then(res => {
-                if (!res.ok) throw new Error('Erro ao carregar os workflows')
-                return res.json()
-            })
+        api('/workflows')
             .then(data => setWorkflows(data))
-            .catch(err => setErro(err.message))
+            .catch(err => setError(err.message))
     }, [])
 
     function handleDelete(id: number) {
-        fetch(`http://localhost:3000/workflows/${id}`, { method: 'DELETE' })
-            .then(res => {
-                if (!res.ok) throw new Error('Erro ao apagar o workflow')
-                return res.json()
-            })
+        api(`/workflows/${id}`, { method: 'DELETE' })
             .then(() => setWorkflows(workflows.filter(w => w.id !== id)))
-            .catch(err => setErro(err.message))
+            .catch(err => setError(err.message))
     }
 
     function handleToggle(id: number) {
-        fetch(`http://localhost:3000/workflows/${id}/toggle`, { method: 'PATCH' })
-            .then(res => {
-                if (!res.ok) throw new Error('Erro ao alterar o estado do workflow')
-                return res.json()
-            })
+        api(`/workflows/${id}/toggle`, { method: 'PATCH' })
             .then(updated => setWorkflows(workflows.map(w => w.id === id ? updated : w)))
-            .catch(err => setErro(err.message))
+            .catch(err => setError(err.message))
     }
 
 
     return (
         <>
             <h2>WorkflowList</h2>
-            {erro && <p>{erro}</p>}
+            {error && <p>{error}</p>}
             <ul>
                 {workflows.map((workflow) => (
                     <li key={workflow.id}>

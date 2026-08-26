@@ -1,24 +1,21 @@
 import { useEffect, useState } from 'react'
 import type { Execution } from '../types'
+import { api } from '../api'
 
 export default function Executions() {
     const [executions, setExecutions] = useState<Execution[]>([])
-    const [erro, setErro] = useState('')
+    const [error, setError] = useState('')
 
     useEffect(() => {
-        fetch('http://localhost:3000/executions')
-            .then(res => {
-                if (!res.ok) throw new Error('Erro ao carregar o histórico')
-                return res.json()
-            })
+        api('/executions')
             .then(data => setExecutions(data))
-            .catch(err => setErro(err.message))
+            .catch(err => setError(err.message))
     }, [])
 
     return (
         <>
             <h2>Histórico</h2>
-            {erro && <p>{erro}</p>}
+            {error && <p>{error}</p>}
             <ul>
                 {executions.map((e) => (
                     <li key={e.id}>
