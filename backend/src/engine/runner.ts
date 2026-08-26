@@ -4,9 +4,10 @@ import executeAction from './actions';
 
 export default async function runWorkflows(
     type: string,
-    data: Record<string, unknown>
+    data: Record<string, unknown>,
+    userId: number
 ) {
-    const found = await pool.query('SELECT * FROM workflows WHERE trigger_type = $1 AND is_active = true', [type]);
+    const found = await pool.query('SELECT * FROM workflows WHERE trigger_type = $1 AND is_active = true AND user_id = $2', [type, userId]);
     const results = [];
 
     for (const workflow of found.rows) {

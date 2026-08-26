@@ -4,7 +4,8 @@ import { pool } from './db';
 import cors from 'cors';
 import workflowsRouter from './routes/workflows';
 import eventsRouter from './routes/events';
-import executionsRouter from './routes/executions'
+import executionsRouter from './routes/executions';
+import authRouter from './routes/auth';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -24,6 +25,7 @@ app.get('/health', async (req, res) => {
 app.use('/workflows', workflowsRouter);
 app.use('/events', eventsRouter);
 app.use('/executions', executionsRouter);
+app.use('/auth', authRouter);
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
