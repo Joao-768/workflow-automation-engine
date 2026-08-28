@@ -13,6 +13,7 @@ export const TRIGGERS: { value: string; label: string; fields: { name: string; k
             { name: 'total', kind: 'number' },
             { name: 'orderId', kind: 'number' },
             { name: 'customer', kind: 'text' },
+            { name: 'email', kind: 'text' },
         ],
     },
     {
@@ -21,6 +22,7 @@ export const TRIGGERS: { value: string; label: string; fields: { name: string; k
         fields: [
             { name: 'userId', kind: 'number' },
             { name: 'email', kind: 'text' },
+            { name: 'name', kind: 'text' },
         ],
     },
     {

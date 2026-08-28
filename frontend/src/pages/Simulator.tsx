@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { api } from '../api'
 
 const EVENTS = [
-    { type: 'order.created', label: 'Order Created', data: { orderId: 123, customer: 'João', total: 149.99 } },
-    { type: 'user.created', label: 'User Created', data: { userId: 45, email: 'joao@mail.com' } },
+    { type: 'order.created', label: 'Order Created', data: { orderId: 123, customer: 'João', email: 'joao@mail.com', total: 149.99 } },
+    { type: 'user.created', label: 'User Created', data: { userId: 45, email: 'ana@mail.com', name: 'Ana' } },
     { type: 'payment.completed', label: 'Payment Completed', data: { paymentId: 9, amount: 59.9 } },
     { type: 'form.submitted', label: 'Form Submitted', data: { formId: 2, field: 'value' } },
 ]

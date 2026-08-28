@@ -20,6 +20,8 @@ export default function WorkflowForm() {
 
     /* um valor por campo da ação escolhida */
     const [config, setConfig] = useState<Record<string, string>>({})
+    /* onde inserir o {{campo}} quando se carrega num atalho */
+    const [lastField, setLastField] = useState('')
 
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(Boolean(id))
@@ -202,10 +204,31 @@ export default function WorkflowForm() {
                             <input
                                 value={config[f.name] ?? ''}
                                 onChange={e => setConfig({ ...config, [f.name]: e.target.value })}
+                                onFocus={() => setLastField(f.name)}
                                 placeholder={f.placeholder}
                             />
                         </div>
                     ))}
+
+                    <p className="tokens">
+                        Usa <code>{'{{campo}}'}</code> para meter dados do evento:
+                        {trigger.fields.map(f => (
+                            <button
+                                type="button"
+                                key={f.name}
+                                className="token"
+                                title={`inserir {{${f.name}}}`}
+                                onClick={() => {
+                                    const target = action.fields.some(a => a.name === lastField)
+                                        ? lastField
+                                        : action.fields[0].name
+                                    setConfig({ ...config, [target]: (config[target] ?? '') + `{{${f.name}}}` })
+                                }}
+                            >
+                                {`{{${f.name}}}`}
+                            </button>
+                        ))}
+                    </p>
                 </div>
 
                 <div className="form-actions">

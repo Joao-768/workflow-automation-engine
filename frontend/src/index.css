@@ -412,3 +412,28 @@ pre {
     .condition { grid-template-columns: 1fr; }
     .choice { flex-direction: column; gap: 8px; }
 }
+
+/* ── atalhos de campos do evento ───────────────────────────── */
+
+.tokens {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--ink-low);
+}
+
+.tokens code {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-mid);
+}
+
+.token {
+    width: auto;
+    margin: 4px 4px 0 0;
+    padding: 2px 7px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-mid);
+    border-radius: 3px;
+}
+.token:hover { border-color: var(--ink-low); color: var(--ink); }
