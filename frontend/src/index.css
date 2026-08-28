@@ -371,3 +371,44 @@ pre {
 @media (max-width: 640px) {
     .specs { grid-template-columns: 1fr; }
 }
+
+/* ── blocos do formulário ──────────────────────────────────── */
+
+.block {
+    margin-bottom: 20px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+.block > .plate { margin-bottom: 12px; }
+.block .field:last-child { margin-bottom: 0; }
+
+.choice { display: flex; gap: 20px; }
+
+.choice label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* os radios sao os unicos inputs que nao ocupam a linha toda */
+.choice input[type="radio"] {
+    width: auto;
+    margin: 0;
+    accent-color: var(--ink);
+}
+
+.condition {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+@media (max-width: 560px) {
+    .condition { grid-template-columns: 1fr; }
+    .choice { flex-direction: column; gap: 8px; }
+}
