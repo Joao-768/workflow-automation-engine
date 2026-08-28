@@ -57,14 +57,14 @@ export default function WorkflowForm() {
             .finally(() => setLoading(false))
     }, [id])
 
-    /* trocar de gatilho invalida o campo escolhido se ele não existir lá */
-    useEffect(() => {
-        if (!trigger.fields.some(f => f.name === condField)) {
-            setCondField(trigger.fields[0].name)
-        }
-    }, [triggerType])
+    /* trocar de gatilho pode invalidar o campo escolhido: derivamos o campo
+       efetivo durante o render em vez de o corrigir num efeito, senao havia
+       um render intermedio com um campo que nao existe neste gatilho */
+    const field = trigger.fields.some(f => f.name === condField)
+        ? condField
+        : trigger.fields[0].name
 
-    const fieldKind = trigger.fields.find(f => f.name === condField)?.kind ?? 'text'
+    const fieldKind = trigger.fields.find(f => f.name === field)?.kind ?? 'text'
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -81,7 +81,7 @@ export default function WorkflowForm() {
             if (fieldKind === 'number' && Number.isNaN(value as number)) {
                 return setError('O valor da condição tem de ser um número.')
             }
-            conditions = { field: condField, operator: condOperator, value }
+            conditions = { field, operator: condOperator, value }
         }
 
         const action_config: Record<string, string> = {}
@@ -165,7 +165,7 @@ export default function WorkflowForm() {
 
                     {hasCondition && (
                         <div className="condition">
-                            <select value={condField} onChange={e => setCondField(e.target.value)}>
+                            <select value={field} onChange={e => setCondField(e.target.value)}>
                                 {trigger.fields.map(f => (
                                     <option key={f.name} value={f.name}>{f.name}</option>
                                 ))}
