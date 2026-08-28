@@ -7,49 +7,49 @@ export default function Landing() {
                 <div className="wrap">
                     <span className="mark">Workflow Engine</span>
                     <div className="whoami">
-                        <Link to="/login">Entrar</Link>
-                        <Link to="/register" className="btn btn-primary btn-sm">Criar conta</Link>
+                        <Link to="/login">Sign in</Link>
+                        <Link to="/register" className="btn btn-primary btn-sm">Create account</Link>
                     </div>
                 </div>
             </header>
 
             <div className="wrap">
                 <section className="hero">
-                    <span className="plate">Motor de automação por eventos</span>
-                    <h1>Um sinal entra. <em>A ação sai.</em></h1>
+                    <span className="plate">Event-driven automation engine</span>
+                    <h1>A signal comes in. <em>An action goes out.</em></h1>
                     <p className="lead">
-                        Fecha o circuito uma vez. Cada evento que chega passa pela porta,
-                        e o que a atravessa dispara a ação — com registo de tudo o que passou.
+                        Wire it up once. Every event that arrives passes through the gate,
+                        and whatever gets through fires the action — with a record of it all.
                     </p>
 
 
                     <div className="hero-actions">
-                        <Link to="/register" className="btn btn-primary">Criar conta</Link>
-                        <Link to="/login" className="btn">Entrar</Link>
+                        <Link to="/register" className="btn btn-primary">Create account</Link>
+                        <Link to="/login" className="btn">Sign in</Link>
                     </div>
                 </section>
 
                 <section className="specs">
                     <div className="spec">
-                        <span className="plate">Entradas</span>
-                        <h3>Quatro gatilhos</h3>
-                        <p>Encomendas, utilizadores, pagamentos e formulários.</p>
+                        <span className="plate">Inputs</span>
+                        <h3>Four triggers</h3>
+                        <p>Orders, users, payments and forms.</p>
                     </div>
                     <div className="spec">
-                        <span className="plate">Porta</span>
-                        <h3>Condição opcional</h3>
-                        <p>Compara um campo do evento. Se não passar, o circuito fica aberto.</p>
+                        <span className="plate">Gate</span>
+                        <h3>Optional condition</h3>
+                        <p>Compares a field from the event. If it doesn't pass, the circuit stays open.</p>
                     </div>
                     <div className="spec">
-                        <span className="plate">Registo</span>
-                        <h3>Traço completo</h3>
-                        <p>Cada passagem guarda o evento, o percurso e o resultado.</p>
+                        <span className="plate">Record</span>
+                        <h3>Full trace</h3>
+                        <p>Every pass stores the event, the path it took and the result.</p>
                     </div>
                 </section>
 
                 <footer className="base">
                     <span>Workflow Automation Engine</span>
-                    <span>projeto de portefólio</span>
+                    <span>portfolio project</span>
                 </footer>
             </div>
         </>

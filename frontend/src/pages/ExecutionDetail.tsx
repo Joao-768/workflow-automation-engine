@@ -25,14 +25,14 @@ export default function ExecutionDetail() {
     }, [id])
 
     if (error) return <p className="fault">{error}</p>
-    if (!execution) return <p className="standby">a ler registo...</p>
+    if (!execution) return <p className="standby">reading record...</p>
 
 
     return (
         <>
             <div className="head">
                 <div>
-                    <span className="plate">Execução {String(execution.id).padStart(4, '0')}</span>
+                    <span className="plate">Execution {String(execution.id).padStart(4, '0')}</span>
                     <h2>{execution.workflow_name}</h2>
                     <p>{new Date(execution.executed_at).toLocaleString()}</p>
                 </div>
@@ -40,20 +40,20 @@ export default function ExecutionDetail() {
             </div>
 
 
-            <div className="strip-head"><span className="plate">Registo</span></div>
+            <div className="strip-head"><span className="plate">Record</span></div>
             <dl className="log">
-                <div><dt>estado</dt><dd>{execution.status}</dd></div>
-                <div><dt>gatilho</dt><dd>{execution.trigger_type}</dd></div>
-                <div><dt>ação</dt><dd>{execution.action_type}</dd></div>
+                <div><dt>status</dt><dd>{execution.status}</dd></div>
+                <div><dt>trigger</dt><dd>{execution.trigger_type}</dd></div>
+                <div><dt>action</dt><dd>{execution.action_type}</dd></div>
             </dl>
 
-            <div className="strip-head"><span className="plate">Evento recebido</span></div>
+            <div className="strip-head"><span className="plate">Event received</span></div>
             <pre style={{ marginTop: 16 }}>{JSON.stringify(execution.event_data, null, 2)}</pre>
 
-            <div className="strip-head"><span className="plate">Resultado</span></div>
+            <div className="strip-head"><span className="plate">Result</span></div>
             <pre style={{ marginTop: 16 }}>{JSON.stringify(execution.result, null, 2)}</pre>
 
-            <Link to="/executions" className="btn">Voltar ao histórico</Link>
+            <Link to="/executions" className="btn">Back to history</Link>
         </>
     )
 }

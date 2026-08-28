@@ -22,15 +22,15 @@ export default function Simulator() {
         <>
             <div className="head">
                 <div>
-                    <h2>Simulador</h2>
-                    <p>Simula um evento externo. Os workflows ativos com esse trigger correm automaticamente.</p>
+                    <h2>Simulator</h2>
+                    <p>Simulate an external event. Active workflows on that trigger run automatically.</p>
                 </div>
             </div>
 
             {error && <p className="fault">{error}</p>}
 
             <div className="strip-head">
-                <span>Eventos disponíveis</span>
+                <span>Available events</span>
             </div>
 
             <div className="strip">
@@ -40,7 +40,7 @@ export default function Simulator() {
                             <span className="line-title">{e.label}</span>
                             <span className="line-sub">{e.type}</span>
                         </div>
-                        <button className="btn-sm" onClick={() => simulate(e.type, e.data)}>Disparar</button>
+                        <button className="btn-sm" onClick={() => simulate(e.type, e.data)}>Fire</button>
                     </div>
                 ))}
             </div>
@@ -48,7 +48,7 @@ export default function Simulator() {
             {result != null && (
                 <>
                     <div className="strip-head" style={{ marginTop: 40 }}>
-                        <span>Resultado</span>
+                        <span>Result</span>
                     </div>
                     <pre>{JSON.stringify(result, null, 2)}</pre>
                 </>

@@ -23,13 +23,13 @@ export default function Register() {
     return (
         <div className="gate">
             <span className="mark">Workflow Engine</span>
-            <h2>Criar conta</h2>
-            <p className="sub">Cria a tua conta em segundos.</p>
+            <h2>Create account</h2>
+            <p className="sub">Set up your account in seconds.</p>
             {error && <p className="fault">{error}</p>}
 
             <form onSubmit={handleSubmit}>
                 <div className="field">
-                    <label>Nome</label>
+                    <label>Name</label>
                     <input value={name} onChange={e => setName(e.target.value)} required />
                 </div>
                 <div className="field">
@@ -40,10 +40,10 @@ export default function Register() {
                     <label>Password</label>
                     <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                 </div>
-                <button type="submit">Criar conta</button>
+                <button type="submit">Create account</button>
             </form>
 
-            <p className="gate-alt">Já tens conta? <Link to="/login">Entrar</Link></p>
+            <p className="gate-alt">Already have an account? <Link to="/login">Sign in</Link></p>
         </div>
     )
 }

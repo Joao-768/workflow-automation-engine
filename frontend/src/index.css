@@ -225,7 +225,7 @@ a.line-title:hover { text-decoration: underline; }
     font-weight: 600;
 }
 
-/* ── formulários ───────────────────────────────────────────── */
+/* ── forms ─────────────────────────────────────────────────── */
 
 .field { margin-bottom: 16px; }
 
@@ -255,8 +255,9 @@ input, select, textarea {
     line-height: 1.4;
 }
 
-/* o select nativo negoceia a largura com o conteudo e ignora o padding
-   vertical no WebKit — sem isto fica mais estreito e mais baixo que os inputs */
+/* the native select negotiates its width from the content and ignores
+   vertical padding on WebKit — without this it ends up narrower and
+   shorter than the inputs */
 select {
     appearance: none;
     -webkit-appearance: none;
@@ -284,7 +285,7 @@ input:focus, select:focus, textarea:focus {
     margin-top: 24px;
 }
 
-/* ── autenticação ──────────────────────────────────────────── */
+/* ── auth ─────────────────────────────────────────────────── */
 
 .gate {
     width: 100%;
@@ -372,7 +373,7 @@ pre {
     .specs { grid-template-columns: 1fr; }
 }
 
-/* ── blocos do formulário ──────────────────────────────────── */
+/* ── form blocks ───────────────────────────────────────────── */
 
 .block {
     margin-bottom: 20px;
@@ -394,7 +395,7 @@ pre {
     cursor: pointer;
 }
 
-/* os radios sao os unicos inputs que nao ocupam a linha toda */
+/* radios are the only inputs that don't span the full line */
 .choice input[type="radio"] {
     width: auto;
     margin: 0;

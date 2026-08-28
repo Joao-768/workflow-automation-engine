@@ -1,10 +1,10 @@
 /**
- * Substitui {{campo}} pelos valores do evento.
+ * Replaces {{field}} with values from the event.
  *
- *   "Ola {{customer}}" + { customer: "Ana" }  ->  "Ola Ana"
+ *   "Hi {{customer}}" + { customer: "Ana" }  ->  "Hi Ana"
  *
- * Um campo que o evento nao traga fica como esta, em vez de virar
- * "undefined" — assim ve-se no historico o que faltou.
+ * A field the event doesn't carry is left as-is instead of becoming
+ * "undefined", so the history shows what was missing.
  */
 export default function fillTemplate(
     value: unknown,

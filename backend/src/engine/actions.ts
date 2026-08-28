@@ -5,8 +5,8 @@ export default async function executeAction(
     action_config: Record<string, unknown>,
     data: Record<string, unknown>
 ) {
-    /* os campos da acao podem trazer {{campo}} — o valor vem do evento,
-       para o mesmo workflow servir cada cliente com os seus dados */
+    /* action fields may carry {{field}} — the value comes from the event,
+       so one workflow can serve each customer with their own data */
     const cfg = (key: string) => fillTemplate(action_config[key], data);
 
     switch (action_type) {
@@ -16,7 +16,7 @@ export default async function executeAction(
         }
         case 'send_email': {
             const to = cfg('to');
-            if (!to) throw new Error('send_email sem destinatario');
+            if (!to) throw new Error('send_email with no recipient');
             console.log(`Email Sent to ${to}!`);
             return { to, subject: cfg('subject') };
         }

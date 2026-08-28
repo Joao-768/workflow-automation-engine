@@ -1,18 +1,18 @@
 # Workflow Automation Engine
 
-Plataforma de automação de workflows. O utilizador define regras no formato
-**WHEN / IF / DO**, o sistema recebe eventos e executa automaticamente as ações
-configuradas.
+Workflow automation platform. Users define rules in a **WHEN / IF / DO**
+format; the system receives events and automatically runs the configured
+actions.
 
 ```
-WHEN   Utilizador criado
-IF     (sempre)
-DO     Enviar email para {{email}}
+WHEN   User created
+IF     (always)
+DO     Send email to {{email}}
 ```
 
-Quando chega um evento, o sistema procura os workflows ativos com aquele
-trigger, avalia a condição de cada um e executa a ação. Cada execução fica
-registada no histórico.
+When an event arrives, the system looks up the active workflows for that
+trigger, evaluates each one's condition and runs its action. Every run is
+recorded in the history.
 
 ```
 EVENT -> TRIGGER -> WORKFLOW -> ACTION -> EXECUTION
@@ -22,12 +22,12 @@ EVENT -> TRIGGER -> WORKFLOW -> ACTION -> EXECUTION
 
 - **Frontend:** React, TypeScript, Vite, React Router
 - **Backend:** Node.js, TypeScript, Express
-- **Base de dados:** PostgreSQL
-- **Autenticação:** JWT, passwords com bcrypt
+- **Database:** PostgreSQL
+- **Auth:** JWT, passwords hashed with bcrypt
 
-## Como funciona
+## How it works
 
-Um evento entra pelo `POST /events`:
+An event comes in through `POST /events`:
 
 ```json
 {
@@ -36,53 +36,52 @@ Um evento entra pelo `POST /events`:
 }
 ```
 
-O engine faz três coisas por cada workflow que corresponda ao trigger:
+For each workflow matching the trigger, the engine does three things:
 
-1. **Avalia a condição** (`engine/conditions.ts`) — se não passar, a execução
-   fica com estado `skipped` e a ação não corre.
-2. **Executa a ação** (`engine/actions.ts`) — se rebentar, o estado é `failed`
-   e o erro é guardado.
-3. **Grava a execução** (`engine/runner.ts`) com o evento que a despoletou e o
-   resultado.
+1. **Evaluates the condition** (`engine/conditions.ts`) — if it doesn't pass,
+   the execution is recorded as `skipped` and the action never runs.
+2. **Runs the action** (`engine/actions.ts`) — if it throws, the status is
+   `failed` and the error is stored.
+3. **Records the execution** (`engine/runner.ts`) along with the triggering
+   event and the result.
 
-Cada workflow é tratado de forma isolada: se um falhar, os restantes correm na
-mesma.
+Each workflow is handled in isolation: if one fails, the rest still run.
 
-Como não há integrações externas nesta versão, as ações são simuladas — cada
-uma devolve um objeto a descrever o que teria feito.
+There are no external integrations in this version, so actions are simulated —
+each one returns an object describing what it would have done.
 
-### Dados do evento nas ações
+### Event data in actions
 
-Os campos da ação aceitam `{{campo}}`, substituído pelo valor que vem no
-evento. É o que permite um único workflow servir cada utilizador com os seus
-dados, em vez de um destinatário fixo:
+Action fields accept `{{field}}`, replaced by the value carried in the event.
+This is what lets a single workflow serve each user with their own data instead
+of a hardcoded recipient:
 
 ```
 to:       {{email}}                  ->  ana@mail.com
-subject:  Bem-vindo, {{name}}!       ->  Bem-vindo, Ana!
+subject:  Welcome, {{name}}!         ->  Welcome, Ana!
 ```
 
-Um campo que o evento não traga fica literal (`{{telefone}}`) em vez de virar
-`undefined`, para se ver no histórico o que faltou.
+A field the event doesn't carry is left as-is (`{{phone}}`) rather than turning
+into `undefined`, so the history shows what was missing.
 
-### Estados de execução
+### Execution statuses
 
-| Estado | Significado |
-|--------|-------------|
-| `success` | A condição passou e a ação correu |
-| `skipped` | A condição não passou, a ação não correu |
-| `failed` | A ação foi executada mas rebentou |
+| Status | Meaning |
+|--------|---------|
+| `success` | The condition passed and the action ran |
+| `skipped` | The condition didn't pass, the action never ran |
+| `failed` | The action ran but threw |
 
-## Triggers e ações
+## Triggers and actions
 
-| Trigger | Campos do evento |
-|---------|------------------|
+| Trigger | Event fields |
+|---------|--------------|
 | `order.created` | `total`, `orderId`, `customer`, `email` |
 | `user.created` | `userId`, `email`, `name` |
 | `payment.completed` | `amount`, `paymentId` |
 | `form.submitted` | `formId`, `field` |
 
-**Ações** e a configuração de cada uma, guardada em JSONB:
+**Actions** and the config each one stores as JSONB:
 
 ```json
 send_notification  { "message": "..." }
@@ -90,42 +89,43 @@ send_email         { "to": "...", "subject": "..." }
 create_record      { "table": "...", "fields": "..." }
 ```
 
-**Condições** comparam um campo do evento com um valor, através de um dos três
-operadores que o engine conhece: `>`, `<`, `==`. Um workflow sem condição corre
-sempre.
+**Conditions** compare an event field against a value using one of the three
+operators the engine knows: `>`, `<`, `==`. A workflow with no condition always
+runs.
 
 ```json
 { "field": "total", "operator": ">", "value": 100 }
 ```
 
-O formulário monta isto a partir de dropdowns — o campo vem do trigger
-escolhido e o operador da lista acima, por isso não é possível gravar uma
-condição que só rebentaria em runtime.
+The form builds this from dropdowns — the field comes from the selected trigger
+and the operator from the list above, so it's not possible to save a condition
+that would only blow up at runtime.
 
 ## API
 
-Tirando o registo e o login, todas as rotas exigem `Authorization: Bearer
-<token>`. Cada utilizador só vê os seus próprios workflows e execuções.
+Apart from register and login, every route requires
+`Authorization: Bearer <token>`. Each user only ever sees their own workflows
+and executions.
 
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST | `/auth/register` | Cria conta, devolve token |
-| POST | `/auth/login` | Autentica, devolve token |
-| GET | `/workflows` | Lista os do utilizador |
-| POST | `/workflows` | Cria |
-| GET | `/workflows/:id` | Vê um |
-| PUT | `/workflows/:id` | Edita |
-| DELETE | `/workflows/:id` | Apaga (e o histórico dele) |
-| PATCH | `/workflows/:id/toggle` | Ativa/desativa |
-| POST | `/events` | Recebe um evento e corre os workflows |
-| GET | `/executions` | Histórico de execuções |
-| GET | `/executions/:id` | Detalhe de uma execução |
-| GET | `/health` | Estado da ligação à base de dados |
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/auth/register` | Create an account, returns a token |
+| POST | `/auth/login` | Authenticate, returns a token |
+| GET | `/workflows` | List the user's workflows |
+| POST | `/workflows` | Create |
+| GET | `/workflows/:id` | Read one |
+| PUT | `/workflows/:id` | Update |
+| DELETE | `/workflows/:id` | Delete (along with its history) |
+| PATCH | `/workflows/:id/toggle` | Enable/disable |
+| POST | `/events` | Receive an event and run the workflows |
+| GET | `/executions` | Execution history |
+| GET | `/executions/:id` | Single execution detail |
+| GET | `/health` | Database connection status |
 
-O `POST` e o `PUT` passam por um middleware de validação que rejeita campos em
-falta ou triggers e ações fora da lista, devolvendo `400`.
+`POST` and `PUT` go through validation middleware that rejects missing fields
+or triggers and actions outside the allowed list, returning `400`.
 
-## Base de dados
+## Database
 
 ```sql
 users
@@ -133,59 +133,59 @@ users
 
 workflows
   id, name, description, user_id, created_at
-  trigger_type      -- coluna: é por aqui que se procuram os workflows
-  conditions        -- JSONB, opcional
-  action_type       -- coluna: decide qual o handler
-  action_config     -- JSONB, varia conforme a ação
+  trigger_type      -- column: this is what workflows are looked up by
+  conditions        -- JSONB, optional
+  action_type       -- column: decides which handler runs
+  action_config     -- JSONB, shape varies per action
   is_active
 
 executions
   id, workflow_id, status, executed_at
-  event_data        -- o evento que despoletou
-  result            -- o que a ação devolveu, ou o erro
+  event_data        -- the event that triggered it
+  result            -- what the action returned, or the error
 ```
 
-O que é pesquisado ou determina uma decisão é coluna; o que varia conforme o
-tipo é JSONB. Apagar um utilizador apaga os workflows dele, e apagar um
-workflow apaga as execuções (`ON DELETE CASCADE`).
+Anything queried or driving a decision is a column; anything whose shape varies
+by type is JSONB. Deleting a user deletes their workflows, and deleting a
+workflow deletes its executions (`ON DELETE CASCADE`).
 
-## Estrutura
+## Layout
 
 ```
 backend/src
-  db/          ligação ao Postgres e schema
-  engine/      lógica de domínio (não conhece Express)
-  middleware/  verificação do JWT
-  routes/      camada HTTP
+  db/          Postgres connection and schema
+  engine/      domain logic (knows nothing about Express)
+  middleware/  JWT verification
+  routes/      HTTP layer
 
 frontend/src
-  pages/       landing, autenticação, dashboard, workflows, simulador, histórico
-  schema.ts    triggers, campos e ações que o formulário oferece
+  pages/       landing, auth, dashboard, workflows, simulator, history
+  schema.ts    triggers, fields and actions the form offers
   types.ts
 ```
 
-O engine não importa nada do Express. Recebe dados, devolve resultados — pode
-ser chamado a partir de outra origem sem alterações.
+The engine imports nothing from Express. It takes data and returns results, so
+it can be driven from somewhere else unchanged.
 
-## Arrancar
+## Running it
 
-Precisa de PostgreSQL a correr localmente.
+Requires PostgreSQL running locally.
 
 ```bash
 createdb workflow_automation_engine
 psql workflow_automation_engine -f backend/src/db/schema.sql
 ```
 
-**Backend** (porta 3000)
+**Backend** (port 3000)
 
 ```bash
 cd backend
 npm install
-cp .env.example .env    # ajustar DATABASE_URL e JWT_SECRET
+cp .env.example .env    # set DATABASE_URL and JWT_SECRET
 npm run dev
 ```
 
-**Frontend** (porta 5173)
+**Frontend** (port 5173)
 
 ```bash
 cd frontend
@@ -193,13 +193,13 @@ npm install
 npm run dev
 ```
 
-Cria conta em `/register`, define um workflow e dispara um evento no simulador
-para o ver correr.
+Create an account at `/register`, define a workflow, then fire an event from
+the simulator to watch it run.
 
-## Estado
+## Status
 
-V1 completo: autenticação com isolamento de dados por utilizador, CRUD de
-workflows, engine de execução, simulador de eventos e histórico.
+V1 complete: authentication with per-user data isolation, workflow CRUD,
+execution engine, event simulator and history.
 
-Previsto para V2: builder visual com nodes, drag & drop, IF/ELSE e múltiplas
-ações por workflow.
+Planned for V2: visual node builder with drag & drop, IF/ELSE branching and
+multiple actions per workflow.

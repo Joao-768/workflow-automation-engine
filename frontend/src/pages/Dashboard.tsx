@@ -16,7 +16,7 @@ export default function Dashboard() {
             .finally(() => setLoading(false))
     }, [])
 
-    if (loading) return <p className="standby">A carregar...</p>
+    if (loading) return <p className="standby">Loading...</p>
 
     const active = workflows.filter(w => w.is_active).length
     const recent = executions.slice(0, 5)
@@ -26,9 +26,9 @@ export default function Dashboard() {
             <div className="head">
                 <div>
                     <h2>Dashboard</h2>
-                    <p>Visão geral dos teus workflows e execuções.</p>
+                    <p>An overview of your workflows and executions.</p>
                 </div>
-                <Link to="/workflows/new" className="btn btn-primary">Novo workflow</Link>
+                <Link to="/workflows/new" className="btn btn-primary">New workflow</Link>
             </div>
 
             {error && <p className="fault">{error}</p>}
@@ -39,25 +39,25 @@ export default function Dashboard() {
                     <span className="v">{workflows.length}</span>
                 </div>
                 <div className="readout">
-                    <span className="plate">Ativos</span>
+                    <span className="plate">Active</span>
                     <span className="v">{active}</span>
                 </div>
                 <div className="readout">
-                    <span className="plate">Execuções</span>
+                    <span className="plate">Executions</span>
                     <span className="v">{executions.length}</span>
                 </div>
             </div>
 
             <div className="strip-head">
-                <span>Execuções recentes</span>
-                {recent.length > 0 && <Link to="/executions">Ver todas</Link>}
+                <span>Recent executions</span>
+                {recent.length > 0 && <Link to="/executions">View all</Link>}
             </div>
 
             <div className="strip">
                 {recent.length === 0 ? (
                     <div className="blank">
-                        <h3>Ainda não há execuções</h3>
-                        <p>Dispara um evento no <Link to="/simulator">simulador</Link>.</p>
+                        <h3>No executions yet</h3>
+                        <p>Fire an event from the <Link to="/simulator">simulator</Link>.</p>
                     </div>
                 ) : (
                     recent.map(e => (

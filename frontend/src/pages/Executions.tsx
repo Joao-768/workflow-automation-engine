@@ -15,28 +15,28 @@ export default function Executions() {
             .finally(() => setLoading(false))
     }, [])
 
-    if (loading) return <p className="standby">A carregar...</p>
+    if (loading) return <p className="standby">Loading...</p>
 
     return (
         <>
             <div className="head">
                 <div>
-                    <h2>Histórico</h2>
-                    <p>Cada vez que um workflow correu, e com que resultado.</p>
+                    <h2>History</h2>
+                    <p>Every time a workflow ran, and how it turned out.</p>
                 </div>
             </div>
 
             {error && <p className="fault">{error}</p>}
 
             <div className="strip-head">
-                <span>{executions.length} {executions.length === 1 ? 'execução' : 'execuções'}</span>
+                <span>{executions.length} {executions.length === 1 ? 'execution' : 'executions'}</span>
             </div>
 
             <div className="strip">
                 {executions.length === 0 ? (
                     <div className="blank">
-                        <h3>Ainda não há execuções</h3>
-                        <p>Dispara um evento no <Link to="/simulator">simulador</Link>.</p>
+                        <h3>No executions yet</h3>
+                        <p>Fire an event from the <Link to="/simulator">simulator</Link>.</p>
                     </div>
                 ) : (
                     executions.map(e => (

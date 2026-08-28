@@ -12,15 +12,15 @@ export default function WorkflowForm() {
     const [triggerType, setTriggerType] = useState(TRIGGERS[0].value)
     const [actionType, setActionType] = useState(ACTIONS[0].value)
 
-    /* condição em partes, não em JSON */
+    /* condition split into parts, not raw JSON */
     const [hasCondition, setHasCondition] = useState(false)
     const [condField, setCondField] = useState(TRIGGERS[0].fields[0].name)
     const [condOperator, setCondOperator] = useState(OPERATORS[0].value)
     const [condValue, setCondValue] = useState('')
 
-    /* um valor por campo da ação escolhida */
+    /* one value per field of the selected action */
     const [config, setConfig] = useState<Record<string, string>>({})
-    /* onde inserir o {{campo}} quando se carrega num atalho */
+    /* which field a {{token}} shortcut inserts into */
     const [lastField, setLastField] = useState('')
 
     const [error, setError] = useState('')
@@ -45,8 +45,9 @@ export default function WorkflowForm() {
                     setCondValue(String(w.conditions.value ?? ''))
                 }
 
-                /* o que vem da BD pode ter campos que esta ação não usa — o
-                   render só mostra os dela, e o submit só envia esses */
+                /* what comes back from the DB may hold fields this action
+                   doesn't use — the render only shows its own, and submit
+                   only sends those */
                 const cfg: Record<string, string> = {}
                 for (const [k, v] of Object.entries(w.action_config ?? {})) {
                     cfg[k] = typeof v === 'string' ? v : JSON.stringify(v)
@@ -57,9 +58,10 @@ export default function WorkflowForm() {
             .finally(() => setLoading(false))
     }, [id])
 
-    /* trocar de gatilho pode invalidar o campo escolhido: derivamos o campo
-       efetivo durante o render em vez de o corrigir num efeito, senao havia
-       um render intermedio com um campo que nao existe neste gatilho */
+    /* switching trigger can invalidate the selected field: derive the
+       effective one during render instead of fixing it in an effect, which
+       would leave an intermediate render holding a field this trigger
+       doesn't have */
     const field = trigger.fields.some(f => f.name === condField)
         ? condField
         : trigger.fields[0].name
@@ -73,13 +75,13 @@ export default function WorkflowForm() {
         let conditions = null
         if (hasCondition) {
             if (condValue.trim() === '') {
-                return setError('Indica o valor a comparar na condição.')
+                return setError('Enter the value to compare in the condition.')
             }
-            /* '==' compara sem converter (conditions.ts), por isso um campo de
-               texto tem de ir como texto e um numérico como número */
+            /* '==' compares without coercing (conditions.ts), so a text field
+               must go as text and a numeric one as a number */
             const value = fieldKind === 'number' ? Number(condValue) : condValue
             if (fieldKind === 'number' && Number.isNaN(value as number)) {
-                return setError('O valor da condição tem de ser um número.')
+                return setError('The condition value must be a number.')
             }
             conditions = { field, operator: condOperator, value }
         }
@@ -105,14 +107,14 @@ export default function WorkflowForm() {
             .catch(err => setError(err.message))
     }
 
-    if (loading) return <p className="standby">A carregar...</p>
+    if (loading) return <p className="standby">Loading...</p>
 
     return (
         <>
             <div className="head">
                 <div>
-                    <h2>{id ? 'Editar workflow' : 'Novo workflow'}</h2>
-                    <p>Define quando o workflow corre e o que faz.</p>
+                    <h2>{id ? 'Edit workflow' : 'New workflow'}</h2>
+                    <p>Set when the workflow runs and what it does.</p>
                 </div>
             </div>
 
@@ -120,19 +122,19 @@ export default function WorkflowForm() {
 
             <form onSubmit={handleSubmit}>
                 <div className="field">
-                    <label>Nome</label>
+                    <label>Name</label>
                     <input value={name} onChange={e => setName(e.target.value)} required />
                 </div>
 
                 <div className="field">
-                    <label>Descrição</label>
+                    <label>Description</label>
                     <input value={description} onChange={e => setDescription(e.target.value)} />
                 </div>
 
                 <div className="block">
-                    <span className="plate">Quando</span>
+                    <span className="plate">When</span>
                     <div className="field">
-                        <label>O evento que despoleta</label>
+                        <label>The event that fires it</label>
                         <select value={triggerType} onChange={e => setTriggerType(e.target.value)}>
                             {TRIGGERS.map(t => (
                                 <option key={t.value} value={t.value}>{t.label} — {t.value}</option>
@@ -142,7 +144,7 @@ export default function WorkflowForm() {
                 </div>
 
                 <div className="block">
-                    <span className="plate">Se</span>
+                    <span className="plate">If</span>
 
                     <div className="choice">
                         <label>
@@ -151,7 +153,7 @@ export default function WorkflowForm() {
                                 checked={!hasCondition}
                                 onChange={() => setHasCondition(false)}
                             />
-                            Corre sempre
+                            Runs always
                         </label>
                         <label>
                             <input
@@ -159,7 +161,7 @@ export default function WorkflowForm() {
                                 checked={hasCondition}
                                 onChange={() => setHasCondition(true)}
                             />
-                            Só se a condição passar
+                            Only if the condition passes
                         </label>
                     </div>
 
@@ -180,17 +182,17 @@ export default function WorkflowForm() {
                                 step="any"
                                 value={condValue}
                                 onChange={e => setCondValue(e.target.value)}
-                                placeholder={fieldKind === 'number' ? '100' : 'valor'}
+                                placeholder={fieldKind === 'number' ? '100' : 'value'}
                             />
                         </div>
                     )}
                 </div>
 
                 <div className="block">
-                    <span className="plate">Então</span>
+                    <span className="plate">Then</span>
 
                     <div className="field">
-                        <label>O que acontece</label>
+                        <label>What happens</label>
                         <select value={actionType} onChange={e => setActionType(e.target.value)}>
                             {ACTIONS.map(a => (
                                 <option key={a.value} value={a.value}>{a.label}</option>
@@ -211,13 +213,13 @@ export default function WorkflowForm() {
                     ))}
 
                     <p className="tokens">
-                        Usa <code>{'{{campo}}'}</code> para meter dados do evento:
+                        Use <code>{'{{field}}'}</code> to pull in event data:
                         {trigger.fields.map(f => (
                             <button
                                 type="button"
                                 key={f.name}
                                 className="token"
-                                title={`inserir {{${f.name}}}`}
+                                title={`insert {{${f.name}}}`}
                                 onClick={() => {
                                     const target = action.fields.some(a => a.name === lastField)
                                         ? lastField
@@ -232,8 +234,8 @@ export default function WorkflowForm() {
                 </div>
 
                 <div className="form-actions">
-                    <button type="submit" className="btn-primary">{id ? 'Guardar' : 'Criar'}</button>
-                    <Link to="/workflows">Cancelar</Link>
+                    <button type="submit" className="btn-primary">{id ? 'Save' : 'Create'}</button>
+                    <Link to="/workflows">Cancel</Link>
                 </div>
             </form>
         </>

@@ -27,16 +27,16 @@ export default function WorkflowList() {
             .catch(err => setError(err.message))
     }
 
-    if (loading) return <p className="standby">A carregar...</p>
+    if (loading) return <p className="standby">Loading...</p>
 
     return (
         <>
             <div className="head">
                 <div>
                     <h2>Workflows</h2>
-                    <p>As regras que correm quando um evento chega.</p>
+                    <p>The rules that run when an event arrives.</p>
                 </div>
-                <Link to="/workflows/new" className="btn btn-primary">Novo workflow</Link>
+                <Link to="/workflows/new" className="btn btn-primary">New workflow</Link>
             </div>
 
             {error && <p className="fault">{error}</p>}
@@ -48,8 +48,8 @@ export default function WorkflowList() {
             <div className="strip">
                 {workflows.length === 0 ? (
                     <div className="blank">
-                        <h3>Ainda não tens workflows</h3>
-                        <p>Cria o primeiro para começares a automatizar.</p>
+                        <h3>No workflows yet</h3>
+                        <p>Create your first one to start automating.</p>
                     </div>
                 ) : (
                     workflows.map(w => (
@@ -59,14 +59,14 @@ export default function WorkflowList() {
                                 <span className="line-sub">{w.trigger_type} → {w.action_type}</span>
                             </div>
                             <span className={`signal ${w.is_active ? 'signal-on' : ''}`}>
-                                {w.is_active ? 'ativo' : 'inativo'}
+                                {w.is_active ? 'active' : 'inactive'}
                             </span>
                             <div className="line-acts">
                                 <button className="btn-sm" onClick={() => handleToggle(w.id)}>
-                                    {w.is_active ? 'Desativar' : 'Ativar'}
+                                    {w.is_active ? 'Disable' : 'Enable'}
                                 </button>
                                 <button className="btn-sm btn-halt" onClick={() => handleDelete(w.id)}>
-                                    Apagar
+                                    Delete
                                 </button>
                             </div>
                         </div>

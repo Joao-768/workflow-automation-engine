@@ -14,8 +14,8 @@ import Register from './pages/Register'
 const TABS = [
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/workflows', label: 'Workflows' },
-    { to: '/simulator', label: 'Simulador' },
-    { to: '/executions', label: 'Histórico' },
+    { to: '/simulator', label: 'Simulator' },
+    { to: '/executions', label: 'History' },
 ]
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -37,7 +37,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
                     <div className="whoami">
                         <span>{user?.name}</span>
-                        <button className="btn-sm" onClick={logout}>Sair</button>
+                        <button className="btn-sm" onClick={logout}>Log out</button>
                     </div>
                 </div>
             </header>

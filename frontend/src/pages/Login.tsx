@@ -22,8 +22,8 @@ export default function Login() {
     return (
         <div className="gate">
             <span className="mark">Workflow Engine</span>
-            <h2>Entrar na tua conta</h2>
-            <p className="sub">Acede aos teus workflows.</p>
+            <h2>Sign in to your account</h2>
+            <p className="sub">Access your workflows.</p>
             {error && <p className="fault">{error}</p>}
 
             <form onSubmit={handleSubmit}>
@@ -35,10 +35,10 @@ export default function Login() {
                     <label>Password</label>
                     <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                 </div>
-                <button type="submit">Entrar</button>
+                <button type="submit">Sign in</button>
             </form>
 
-            <p className="gate-alt">Não tens conta? <Link to="/register">Criar conta</Link></p>
+            <p className="gate-alt">No account yet? <Link to="/register">Create one</Link></p>
         </div>
     )
 }

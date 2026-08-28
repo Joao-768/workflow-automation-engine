@@ -16,11 +16,11 @@ export async function api(path: string, options: RequestInit = {}) {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         window.location.href = '/login'
-        throw new Error('Sessão expirada')
+        throw new Error('Session expired')
     }
 
     const data = await res.json()
-    if (!res.ok) throw new Error(data.error ?? 'Erro no pedido')
+    if (!res.ok) throw new Error(data.error ?? 'Request failed')
 
     return data
 }

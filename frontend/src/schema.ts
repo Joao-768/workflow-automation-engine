@@ -1,6 +1,6 @@
 /**
- * O que cada gatilho traz no evento e o que cada ação precisa.
- * Espelha engine/conditions.ts e engine/actions.ts — se lá mudar, muda aqui.
+ * What each trigger carries in its event, and what each action needs.
+ * Mirrors engine/conditions.ts and engine/actions.ts — if those change, change this.
  */
 
 export type FieldKind = 'number' | 'text'
@@ -8,7 +8,7 @@ export type FieldKind = 'number' | 'text'
 export const TRIGGERS: { value: string; label: string; fields: { name: string; kind: FieldKind }[] }[] = [
     {
         value: 'order.created',
-        label: 'Encomenda criada',
+        label: 'Order created',
         fields: [
             { name: 'total', kind: 'number' },
             { name: 'orderId', kind: 'number' },
@@ -18,7 +18,7 @@ export const TRIGGERS: { value: string; label: string; fields: { name: string; k
     },
     {
         value: 'user.created',
-        label: 'Utilizador criado',
+        label: 'User created',
         fields: [
             { name: 'userId', kind: 'number' },
             { name: 'email', kind: 'text' },
@@ -27,7 +27,7 @@ export const TRIGGERS: { value: string; label: string; fields: { name: string; k
     },
     {
         value: 'payment.completed',
-        label: 'Pagamento concluído',
+        label: 'Payment completed',
         fields: [
             { name: 'amount', kind: 'number' },
             { name: 'paymentId', kind: 'number' },
@@ -35,7 +35,7 @@ export const TRIGGERS: { value: string; label: string; fields: { name: string; k
     },
     {
         value: 'form.submitted',
-        label: 'Formulário submetido',
+        label: 'Form submitted',
         fields: [
             { name: 'formId', kind: 'number' },
             { name: 'field', kind: 'text' },
@@ -43,33 +43,33 @@ export const TRIGGERS: { value: string; label: string; fields: { name: string; k
     },
 ]
 
-/* o engine só conhece estes três — conditions.ts */
+/* the engine only knows these three — conditions.ts */
 export const OPERATORS = [
-    { value: '>', label: 'maior que' },
-    { value: '<', label: 'menor que' },
-    { value: '==', label: 'igual a' },
+    { value: '>', label: 'greater than' },
+    { value: '<', label: 'less than' },
+    { value: '==', label: 'equals' },
 ]
 
 export const ACTIONS: { value: string; label: string; fields: { name: string; label: string; placeholder: string }[] }[] = [
     {
         value: 'send_notification',
-        label: 'Enviar notificação',
-        fields: [{ name: 'message', label: 'Mensagem', placeholder: 'Encomenda grande recebida' }],
+        label: 'Send notification',
+        fields: [{ name: 'message', label: 'Message', placeholder: 'Large order received' }],
     },
     {
         value: 'send_email',
-        label: 'Enviar email',
+        label: 'Send email',
         fields: [
-            { name: 'to', label: 'Para', placeholder: 'cliente@mail.com' },
-            { name: 'subject', label: 'Assunto', placeholder: 'A tua encomenda' },
+            { name: 'to', label: 'To', placeholder: 'customer@mail.com' },
+            { name: 'subject', label: 'Subject', placeholder: 'Your order' },
         ],
     },
     {
         value: 'create_record',
-        label: 'Criar registo',
+        label: 'Create record',
         fields: [
-            { name: 'table', label: 'Tabela', placeholder: 'orders' },
-            { name: 'fields', label: 'Campos', placeholder: 'status=pago' },
+            { name: 'table', label: 'Table', placeholder: 'orders' },
+            { name: 'fields', label: 'Fields', placeholder: 'status=paid' },
         ],
     },
 ]
