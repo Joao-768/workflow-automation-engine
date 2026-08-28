@@ -8,7 +8,12 @@ import executionsRouter from './routes/executions';
 import authRouter from './routes/auth';
 
 const app = express();
-const PORT = process.env.PORT ?? 3000;
+const PORT = Number(process.env.PORT ?? 3000);
+
+if (!process.env.JWT_SECRET) {
+    console.error('JWT_SECRET is not set');
+    process.exit(1);
+}
 
 app.use(cors({ origin: process.env.FRONTEND_URL }));
 app.use(express.json());
@@ -27,6 +32,6 @@ app.use('/events', eventsRouter);
 app.use('/executions', executionsRouter);
 app.use('/auth', authRouter);
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
 });
