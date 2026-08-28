@@ -14,46 +14,31 @@ export default function Login() {
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         setError('')
-
-        api('/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password }),
-        })
-            .then(data => {
-                login(data.token, data.user)
-                navigate('/dashboard')
-            })
+        api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })
+            .then(data => { login(data.token, data.user); navigate('/dashboard') })
             .catch(err => setError(err.message))
     }
 
     return (
-        <>
-            <h2>Entrar</h2>
-            {error && <p>{error}</p>}
+        <div className="gate">
+            <span className="mark">Workflow Engine</span>
+            <h2>Entrar na tua conta</h2>
+            <p className="sub">Acede aos teus workflows.</p>
+            {error && <p className="fault">{error}</p>}
+
             <form onSubmit={handleSubmit}>
-                <div>
+                <div className="field">
                     <label>Email</label>
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        required
-                    />
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
-                <div>
+                <div className="field">
                     <label>Password</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        required
-                    />
+                    <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                 </div>
                 <button type="submit">Entrar</button>
             </form>
-            <p>
-                Não tens conta? <Link to="/register">Criar conta</Link>
-            </p>
-        </>
+
+            <p className="gate-alt">Não tens conta? <Link to="/register">Criar conta</Link></p>
+        </div>
     )
 }

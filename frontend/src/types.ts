@@ -5,6 +5,7 @@ export type Workflow = {
     trigger_type: string
     action_type: string
     is_active: boolean
+    conditions: Record<string, unknown> | null
 }
 
 export type Execution = {

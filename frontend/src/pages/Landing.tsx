@@ -2,69 +2,56 @@ import { Link } from 'react-router-dom'
 
 export default function Landing() {
     return (
-        <div className="landing">
-            <section className="hero">
-                <h2>Automatiza o que se repete</h2>
-                <p>
-                    Define uma regra uma vez. Sempre que o acontecimento se repetir,
-                    a plataforma trata do resto.
-                </p>
-                <Link to="/register" className="cta">Começar</Link>
-            </section>
-
-            <section>
-                <h3>Como funciona</h3>
-                <div className="flow">
-                    <div className="flow-step">
-                        <span className="flow-label">WHEN</span>
-                        <span>Order Created</span>
-                    </div>
-                    <div className="flow-arrow">&darr;</div>
-                    <div className="flow-step">
-                        <span className="flow-label">IF</span>
-                        <span>Total &gt; 100</span>
-                    </div>
-                    <div className="flow-arrow">&darr;</div>
-                    <div className="flow-step">
-                        <span className="flow-label">DO</span>
-                        <span>Send Notification</span>
+        <>
+            <header className="rail">
+                <div className="wrap">
+                    <span className="mark">Workflow Engine</span>
+                    <div className="whoami">
+                        <Link to="/login">Entrar</Link>
+                        <Link to="/register" className="btn btn-primary btn-sm">Criar conta</Link>
                     </div>
                 </div>
-            </section>
+            </header>
 
-            <section>
-                <h3>O que podes fazer</h3>
-                <div className="features">
-                    <div className="feature">
-                        <h4>Quatro triggers</h4>
-                        <p>Pedidos, utilizadores, pagamentos e formulários.</p>
-                    </div>
-                    <div className="feature">
-                        <h4>Condições</h4>
-                        <p>Só age quando os dados do evento cumprem a regra.</p>
-                    </div>
-                    <div className="feature">
-                        <h4>Histórico completo</h4>
-                        <p>Cada execução fica registada com o evento e o resultado.</p>
-                    </div>
-                    <div className="feature">
-                        <h4>Simulador</h4>
-                        <p>Testa os workflows sem depender de sistemas externos.</p>
-                    </div>
-                </div>
-            </section>
+            <div className="wrap">
+                <section className="hero">
+                    <span className="plate">Motor de automação por eventos</span>
+                    <h1>Um sinal entra. <em>A ação sai.</em></h1>
+                    <p className="lead">
+                        Fecha o circuito uma vez. Cada evento que chega passa pela porta,
+                        e o que a atravessa dispara a ação — com registo de tudo o que passou.
+                    </p>
 
-            <section className="cta-section">
-                <h3>Pronto para começar?</h3>
-                <Link to="/register" className="cta">Criar conta</Link>
-                <p>
-                    Já tens conta? <Link to="/login">Entrar</Link>
-                </p>
-            </section>
 
-            <footer>
-                <p>Workflow Automation Engine — projeto de portefólio</p>
-            </footer>
-        </div>
+                    <div className="hero-actions">
+                        <Link to="/register" className="btn btn-primary">Criar conta</Link>
+                        <Link to="/login" className="btn">Entrar</Link>
+                    </div>
+                </section>
+
+                <section className="specs">
+                    <div className="spec">
+                        <span className="plate">Entradas</span>
+                        <h3>Quatro gatilhos</h3>
+                        <p>Encomendas, utilizadores, pagamentos e formulários.</p>
+                    </div>
+                    <div className="spec">
+                        <span className="plate">Porta</span>
+                        <h3>Condição opcional</h3>
+                        <p>Compara um campo do evento. Se não passar, o circuito fica aberto.</p>
+                    </div>
+                    <div className="spec">
+                        <span className="plate">Registo</span>
+                        <h3>Traço completo</h3>
+                        <p>Cada passagem guarda o evento, o percurso e o resultado.</p>
+                    </div>
+                </section>
+
+                <footer className="base">
+                    <span>Workflow Automation Engine</span>
+                    <span>projeto de portefólio</span>
+                </footer>
+            </div>
+        </>
     )
 }

@@ -13,25 +13,46 @@ export default function Simulator() {
     const [error, setError] = useState('')
 
     function simulate(type: string, data: Record<string, unknown>) {
-        api('/events', {
-            method: 'POST',
-            body: JSON.stringify({ type, data }),
-        })
+        api('/events', { method: 'POST', body: JSON.stringify({ type, data }) })
             .then(json => { setResult(json); setError('') })
             .catch(err => setError(err.message))
     }
 
     return (
         <>
-            <h2>Event Simulator</h2>
-            {error && <p>{error}</p>}
-            {EVENTS.map((event) => (
-                <button key={event.type} onClick={() => simulate(event.type, event.data)}>
-                    Simulate {event.label}
-                </button>
-            ))}
+            <div className="head">
+                <div>
+                    <h2>Simulador</h2>
+                    <p>Simula um evento externo. Os workflows ativos com esse trigger correm automaticamente.</p>
+                </div>
+            </div>
 
-            {result != null && <pre>{JSON.stringify(result, null, 2)}</pre>}
+            {error && <p className="fault">{error}</p>}
+
+            <div className="strip-head">
+                <span>Eventos disponíveis</span>
+            </div>
+
+            <div className="strip">
+                {EVENTS.map(e => (
+                    <div key={e.type} className="line">
+                        <div className="line-main">
+                            <span className="line-title">{e.label}</span>
+                            <span className="line-sub">{e.type}</span>
+                        </div>
+                        <button className="btn-sm" onClick={() => simulate(e.type, e.data)}>Disparar</button>
+                    </div>
+                ))}
+            </div>
+
+            {result != null && (
+                <>
+                    <div className="strip-head" style={{ marginTop: 40 }}>
+                        <span>Resultado</span>
+                    </div>
+                    <pre>{JSON.stringify(result, null, 2)}</pre>
+                </>
+            )}
         </>
     )
 }

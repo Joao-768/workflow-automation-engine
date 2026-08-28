@@ -1,307 +1,373 @@
 :root {
-    --bg: #0A0A0A;
-    --surface: #151515;
-    --border: #262626;
-    --text: #A3A3A3;
-    --text-h: #FAFAFA;
-    --accent: #F97316;
+    --bg:      #000;
+    --panel:   #0e0e0e;
+    --border:  #262626;
+    --ink:     #ededed;
+    --ink-mid: #a1a1a1;
+    --ink-low: #6e6e6e;
 
-    --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-    --mono: ui-monospace, Consolas, monospace;
+    --halt: #f05a5a;
+    --ok:   #4ac26b;
 
-    font: 16px/1.5 var(--sans);
-    color: var(--text);
-    background: var(--bg);
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+
+* { box-sizing: border-box; }
 
 body {
     margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
 }
 
-#root {
-    max-width: 900px;
+a { color: var(--ink); text-decoration: underline; }
+a:hover { color: var(--ink-mid); }
+
+:focus-visible { outline: 2px solid var(--ink-mid); outline-offset: 2px; }
+
+h1, h2, h3 { margin: 0; font-weight: 600; line-height: 1.2; }
+h1 { font-size: 32px; }
+h2 { font-size: 22px; }
+h3 { font-size: 16px; }
+p { margin: 0; }
+
+/* ── estrutura ─────────────────────────────────────────────── */
+
+.wrap {
+    width: 100%;
+    max-width: 860px;
     margin: 0 auto;
-    padding: 32px 24px 64px;
+    padding: 0 20px;
 }
 
-h1 {
-    color: var(--text-h);
-    font-size: 28px;
-    font-weight: 600;
-    margin: 0 0 24px;
+main.wrap { padding-top: 32px; padding-bottom: 64px; }
+
+.rail {
+    border-bottom: 1px solid var(--border);
 }
 
-h2 {
-    color: var(--text-h);
-    font-size: 20px;
-    font-weight: 600;
-    margin: 0 0 16px;
-}
-
-nav {
+.rail .wrap {
+    height: 56px;
     display: flex;
     align-items: center;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 12px;
-    margin-bottom: 24px;
+    gap: 24px;
 }
 
-nav span {
-    margin-left: auto;
-    font-size: 14px;
-}
-
-nav a {
-    color: var(--text);
-    text-decoration: none;
-    margin-right: 16px;
-}
-
-nav a:hover {
-    color: var(--accent);
-}
-
-ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-li {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 14px 16px;
-    margin-bottom: 8px;
-}
-
-button,
-li a {
-    font: inherit;
-    font-size: 14px;
-    color: var(--text);
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 12px;
-    margin-left: 8px;
-    cursor: pointer;
-    display: inline-block;
-    text-decoration: none;
-}
-
-button:hover,
-li a:hover {
-    color: var(--text-h);
-    border-color: var(--accent);
-}
-
-button[type="submit"] {
-    color: var(--bg);
-    background: var(--accent);
-    border-color: var(--accent);
+.mark {
     font-weight: 600;
-    padding: 10px 20px;
-    margin-left: 0;
+    color: var(--ink);
+    text-decoration: none;
+    white-space: nowrap;
 }
 
-form div {
-    margin-bottom: 16px;
+.tabs {
+    display: flex;
+    gap: 16px;
+    margin-right: auto;
 }
 
-label {
+.tabs a {
+    color: var(--ink-low);
+    text-decoration: none;
+    font-size: 14px;
+}
+.tabs a:hover { color: var(--ink); }
+.tabs a.on { color: var(--ink); }
+
+.whoami {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--ink-mid);
+}
+
+/* ── cabeçalho de página ───────────────────────────────────── */
+
+.head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.head p {
+    margin-top: 4px;
+    color: var(--ink-mid);
+    font-size: 14px;
+}
+
+.plate {
     display: block;
-    color: var(--text-h);
-    font-size: 14px;
-    margin-bottom: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-low);
 }
 
-input,
-select,
-textarea {
+/* ── botões ────────────────────────────────────────────────── */
+
+button, .btn {
     font: inherit;
-    font-size: 14px;
-    width: 100%;
-    box-sizing: border-box;
-    color: var(--text-h);
-    background: var(--surface);
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--ink);
+    text-decoration: none;
+    cursor: pointer;
+}
+button:hover, .btn:hover { border-color: var(--ink-low); color: var(--ink); }
+
+.btn-primary {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #000;
+}
+.btn-primary:hover { background: #fff; border-color: #fff; color: #000; }
+
+.btn-sm { padding: 4px 10px; font-size: 13px; }
+
+.btn-halt { color: var(--halt); }
+.btn-halt:hover { border-color: var(--halt); color: var(--halt); }
+
+/* ── listas ────────────────────────────────────────────────── */
+
+.strip-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--ink-low);
+}
+
+.strip {
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 10px 12px;
 }
 
-textarea {
+.line {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+}
+.line:last-child { border-bottom: 0; }
+
+.line-main { flex: 1; min-width: 0; }
+
+.line-title {
+    display: block;
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 500;
+}
+a.line-title:hover { text-decoration: underline; }
+
+.line-sub {
+    display: block;
     font-family: var(--mono);
-    min-height: 70px;
+    font-size: 12px;
+    color: var(--ink-low);
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+.line-acts { display: flex; gap: 8px; }
+
+.blank { padding: 32px 16px; text-align: center; }
+.blank p { margin-top: 6px; color: var(--ink-mid); font-size: 14px; }
+
+/* ── estados ───────────────────────────────────────────────── */
+
+.signal {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-low);
+}
+.signal-success, .signal-on { color: var(--ok); }
+.signal-failed { color: var(--halt); }
+
+.standby { color: var(--ink-mid); }
+
+.fault {
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    border: 1px solid var(--halt);
+    border-radius: 4px;
+    color: var(--halt);
+    font-size: 14px;
+}
+
+/* ── números ───────────────────────────────────────────────── */
+
+.readouts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.readout {
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+.readout .v {
+    display: block;
+    margin-top: 4px;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+/* ── formulários ───────────────────────────────────────────── */
+
+.field { margin-bottom: 16px; }
+
+.field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.hint {
+    font-weight: 400;
+    color: var(--ink-low);
+    font-size: 13px;
+}
+
+input, select, textarea {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--panel);
+    color: var(--ink);
+    font: inherit;
+    line-height: 1.4;
+}
+
+/* o select nativo negoceia a largura com o conteudo e ignora o padding
+   vertical no WebKit — sem isto fica mais estreito e mais baixo que os inputs */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 34px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--ink-low) 50%),
+                      linear-gradient(135deg, var(--ink-low) 50%, transparent 50%);
+    background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+
+select option { background: var(--panel); color: var(--ink); }
+
+textarea { min-height: 80px; font-family: var(--mono); font-size: 13px; resize: vertical; }
+
+input:focus, select:focus, textarea:focus {
     outline: none;
-    border-color: var(--accent);
+    border-color: var(--ink-low);
 }
 
-::placeholder {
-    color: #525252;
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 24px;
 }
+
+/* ── autenticação ──────────────────────────────────────────── */
+
+.gate {
+    width: 100%;
+    max-width: 360px;
+    margin: 80px auto;
+    padding: 0 20px;
+}
+
+.gate .mark { display: block; margin-bottom: 28px; }
+.gate h2 { margin-bottom: 4px; }
+.gate .sub { margin-bottom: 24px; color: var(--ink-mid); font-size: 14px; }
+.gate button[type="submit"] { width: 100%; }
+
+.gate-alt {
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--ink-mid);
+}
+
+/* ── landing ───────────────────────────────────────────────── */
+
+.hero { padding: 72px 0; }
+.hero h1 { margin-bottom: 16px; }
+.lead { max-width: 520px; color: var(--ink-mid); }
+.hero-actions { display: flex; gap: 12px; margin-top: 28px; }
+
+.base {
+    display: flex;
+    justify-content: space-between;
+    padding: 24px 0;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--ink-low);
+}
+
+/* ── blocos de dados ───────────────────────────────────────── */
 
 pre {
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--text-h);
-    background: var(--surface);
+    margin: 0 0 24px;
+    padding: 14px 16px;
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 16px;
+    background: var(--panel);
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink-mid);
     overflow-x: auto;
 }
 
-b {
-    color: var(--accent);
+.log {
+    margin: 0 0 24px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
 }
 
-h3 {
-    color: var(--text-h);
-    font-size: 16px;
-    font-weight: 600;
-    margin: 32px 0 12px;
-}
-
-h4 {
-    color: var(--text-h);
-    font-size: 15px;
-    font-weight: 600;
-    margin: 0 0 6px;
-}
-
-.stats {
+.log > div {
     display: flex;
-    gap: 12px;
-}
-
-.stat {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 20px;
-}
-
-.stat .value {
-    display: block;
-    color: var(--accent);
-    font-size: 32px;
-    font-weight: 600;
-}
-
-.stat .label {
-    font-size: 14px;
-}
-
-dl {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 16px 20px;
-    margin: 0 0 16px;
-}
-
-dt {
-    color: var(--text-h);
-    font-size: 13px;
-    margin-top: 12px;
-}
-
-dt:first-child {
-    margin-top: 0;
-}
-
-dd {
-    margin: 2px 0 0;
-}
-
-.landing .hero {
-    padding: 48px 0;
+    gap: 16px;
+    padding: 10px 16px;
     border-bottom: 1px solid var(--border);
-}
-
-.landing .hero h2 {
-    font-size: 36px;
-    margin-bottom: 12px;
-}
-
-.landing .hero p {
-    max-width: 480px;
-    margin-bottom: 24px;
-}
-
-.cta {
-    display: inline-block;
-    color: var(--bg);
-    background: var(--accent);
-    text-decoration: none;
-    font-weight: 600;
-    border-radius: 6px;
-    padding: 12px 24px;
-}
-
-.cta:hover {
-    opacity: 0.85;
-}
-
-.flow {
-    display: inline-block;
-    text-align: center;
-}
-
-.flow-step {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 12px 24px;
-}
-
-.flow-label {
-    display: block;
-    color: var(--accent);
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.flow-arrow {
-    padding: 6px 0;
-}
-
-.features {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
-}
-
-.feature {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 16px;
-}
-
-.feature p {
-    font-size: 14px;
-}
-
-.cta-section {
-    padding: 40px 0;
-    border-top: 1px solid var(--border);
-}
-
-.cta-section p {
-    margin-top: 16px;
-    font-size: 14px;
-}
-
-footer {
-    border-top: 1px solid var(--border);
-    padding-top: 16px;
+    font-family: var(--mono);
     font-size: 13px;
+}
+.log > div:last-child { border-bottom: 0; }
+
+.log dt { width: 90px; color: var(--ink-low); }
+.log dd { margin: 0; color: var(--ink); }
+
+@media (max-width: 640px) {
+    .readouts { grid-template-columns: 1fr; }
+    .tabs { gap: 12px; }
+}
+
+.specs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding-bottom: 56px;
+}
+
+.spec h3 { margin: 6px 0 4px; }
+.spec p { color: var(--ink-mid); font-size: 14px; }
+
+@media (max-width: 640px) {
+    .specs { grid-template-columns: 1fr; }
 }

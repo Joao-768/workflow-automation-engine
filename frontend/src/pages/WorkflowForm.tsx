@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import { api } from '../api'
 
 
@@ -61,46 +61,56 @@ export default function WorkflowForm() {
 
     return (
         <>
-            <h2>{id ? 'Editar' : 'Novo'} Workflow</h2>
-            {error && <p>{error}</p>}
-            <form onSubmit={handleSubmit}>
+            <div className="head">
                 <div>
-                    <label>Nome </label>
+                    <h2>{id ? 'Editar workflow' : 'Novo workflow'}</h2>
+                    <p>Define quando o workflow corre e o que faz.</p>
+                </div>
+            </div>
+            {error && <p className="fault">{error}</p>}
+
+
+            <form onSubmit={handleSubmit}>
+                <div className="field">
+                    <label>Nome</label>
                     <input value={name} onChange={e => setName(e.target.value)} required />
                 </div>
-                <div>
-                    <label>Descrição </label>
+                <div className="field">
+                    <label>Descrição</label>
                     <input value={description} onChange={e => setDescription(e.target.value)} />
                 </div>
-                <div>
-                    <label>WHEN </label>
+                <div className="field">
+                    <label>WHEN <span className="hint">o evento que despoleta</span></label>
                     <select value={triggerType} onChange={e => setTriggerType(e.target.value)}>
                         {TRIGGERS.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                 </div>
-                <div>
-                    <label>IF (JSON, vazio = sem condição) </label>
+                <div className="field">
+                    <label>IF <span className="hint">JSON, deixa vazio para executar sempre</span></label>
                     <textarea
                         value={conditions}
                         onChange={e => setConditions(e.target.value)}
-                        placeholder='{"field":"total","operator":">","value":100}'
+                        placeholder={'{"field":"total","operator":">","value":100}'}
                     />
                 </div>
-                <div>
-                    <label>DO </label>
+                <div className="field">
+                    <label>DO <span className="hint">o que acontece</span></label>
                     <select value={actionType} onChange={e => setActionType(e.target.value)}>
                         {ACTIONS.map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
                 </div>
-                <div>
-                    <label>Config (JSON) </label>
+                <div className="field">
+                    <label>Configuração da ação <span className="hint">JSON com os dados da ação</span></label>
                     <textarea
                         value={actionConfig}
                         onChange={e => setActionConfig(e.target.value)}
-                        placeholder='{"message":"Olá"}'
+                        placeholder={'{"message":"Olá"}'}
                     />
                 </div>
-                <button type="submit">{id ? 'Guardar' : 'Criar'}</button>
+                <div className="form-actions">
+                    <button type="submit">{id ? 'Guardar' : 'Criar'}</button>
+                    <Link to="/workflows">Cancelar</Link>
+                </div>
             </form>
         </>
     )

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { api } from '../api'
 
-type ExecutionDetail = {
+type Detail = {
     id: number
     workflow_name: string
     trigger_type: string
@@ -15,7 +15,7 @@ type ExecutionDetail = {
 
 export default function ExecutionDetail() {
     const { id } = useParams()
-    const [execution, setExecution] = useState<ExecutionDetail | null>(null)
+    const [execution, setExecution] = useState<Detail | null>(null)
     const [error, setError] = useState('')
 
     useEffect(() => {
@@ -24,50 +24,36 @@ export default function ExecutionDetail() {
             .catch(err => setError(err.message))
     }, [id])
 
-    if (error) return <p>{error}</p>
-    if (!execution) return <p>A carregar...</p>
+    if (error) return <p className="fault">{error}</p>
+    if (!execution) return <p className="standby">a ler registo...</p>
 
-    const steps = [
-        { label: 'Evento recebido', done: true },
-        { label: 'Workflow correspondido', done: true },
-        { label: `Condição avaliada`, done: execution.status !== 'skipped' },
-        { label: `Ação ${execution.action_type}`, done: execution.status === 'success' },
-    ]
 
     return (
         <>
-            <h2>Execução #{execution.id}</h2>
+            <div className="head">
+                <div>
+                    <span className="plate">Execução {String(execution.id).padStart(4, '0')}</span>
+                    <h2>{execution.workflow_name}</h2>
+                    <p>{new Date(execution.executed_at).toLocaleString()}</p>
+                </div>
+                <span className={`signal signal-${execution.status}`}>{execution.status}</span>
+            </div>
 
-            <dl>
-                <dt>Workflow</dt>
-                <dd>{execution.workflow_name}</dd>
 
-                <dt>Evento</dt>
-                <dd>{execution.trigger_type}</dd>
-
-                <dt>Estado</dt>
-                <dd><b>{execution.status}</b></dd>
-
-                <dt>Data</dt>
-                <dd>{new Date(execution.executed_at).toLocaleString()}</dd>
+            <div className="strip-head"><span className="plate">Registo</span></div>
+            <dl className="log">
+                <div><dt>estado</dt><dd>{execution.status}</dd></div>
+                <div><dt>gatilho</dt><dd>{execution.trigger_type}</dd></div>
+                <div><dt>ação</dt><dd>{execution.action_type}</dd></div>
             </dl>
 
-            <h3>Passos</h3>
-            <ul>
-                {steps.map(s => (
-                    <li key={s.label}>
-                        {s.done ? '✓' : '✗'} {s.label}
-                    </li>
-                ))}
-            </ul>
+            <div className="strip-head"><span className="plate">Evento recebido</span></div>
+            <pre style={{ marginTop: 16 }}>{JSON.stringify(execution.event_data, null, 2)}</pre>
 
-            <h3>Dados do evento</h3>
-            <pre>{JSON.stringify(execution.event_data, null, 2)}</pre>
+            <div className="strip-head"><span className="plate">Resultado</span></div>
+            <pre style={{ marginTop: 16 }}>{JSON.stringify(execution.result, null, 2)}</pre>
 
-            <h3>Resultado</h3>
-            <pre>{JSON.stringify(execution.result, null, 2)}</pre>
-
-            <p><Link to="/executions">Voltar ao histórico</Link></p>
+            <Link to="/executions" className="btn">Voltar ao histórico</Link>
         </>
     )
 }
