@@ -1,37 +1,33 @@
-import 'dotenv/config';
-import express from 'express';
-import { pool } from './db';
-import cors from 'cors';
-import workflowsRouter from './routes/workflows';
-import eventsRouter from './routes/events';
-import executionsRouter from './routes/executions';
-import authRouter from './routes/auth';
+import { env } from './config/env'
+import { pool } from './db/pool'
+import { createApp } from './http/app'
+import { logger } from './lib/logger'
+import { closeQueue } from './queue/queue'
 
-const app = express();
-const PORT = Number(process.env.PORT ?? 3000);
-
-if (!process.env.JWT_SECRET) {
-    console.error('JWT_SECRET is not set');
-    process.exit(1);
-}
-
-app.use(cors({ origin: process.env.FRONTEND_URL }));
-app.use(express.json());
-
-app.get('/health', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT NOW()')
-        res.json(result.rows)
-    } catch (err) {
-        res.status(500).json({ error: err})
-    }
+/**
+ * API process: receives triggers, records executions and enqueues them.
+ * It never runs workflow steps itself; that is the worker's job (worker.ts).
+ */
+const server = createApp().listen(env.PORT, '0.0.0.0', () => {
+    logger.info({ port: env.PORT }, 'API listening')
 })
 
-app.use('/workflows', workflowsRouter);
-app.use('/events', eventsRouter);
-app.use('/executions', executionsRouter);
-app.use('/auth', authRouter);
+let stopping = false
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-});
+async function shutdown(signal: string) {
+    if (stopping) return
+    stopping = true
+    logger.info({ signal }, 'Shutting down API')
+
+    // Stop accepting connections, let in-flight requests finish, then close
+    // the clients they were using.
+    server.close(async () => {
+        await closeQueue().catch((err) => logger.error({ err }, 'Queue close failed'))
+        await pool.end().catch((err) => logger.error({ err }, 'Postgres close failed'))
+        process.exit(0)
+    })
+    setTimeout(() => process.exit(1), 10_000).unref()
+}
+
+process.on('SIGTERM', () => void shutdown('SIGTERM'))
+process.on('SIGINT', () => void shutdown('SIGINT'))

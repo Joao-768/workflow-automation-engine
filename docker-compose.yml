@@ -1,0 +1,44 @@
+# Local infrastructure for development: PostgreSQL and Redis.
+# The API, worker and frontend run on your machine with npm (see README).
+#
+#   docker compose up -d            start both
+#   docker compose up -d redis      only Redis, if you already run Postgres locally
+#
+# Ports can be moved if something already listens on them:
+#   POSTGRES_PORT=5433 docker compose up -d
+
+services:
+    postgres:
+        image: postgres:17-alpine
+        environment:
+            POSTGRES_USER: workflow
+            POSTGRES_PASSWORD: workflow
+            POSTGRES_DB: workflow_automation_engine
+        ports:
+            - '${POSTGRES_PORT:-5432}:5432'
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U workflow -d workflow_automation_engine']
+            interval: 5s
+            timeout: 3s
+            retries: 10
+
+    redis:
+        image: redis:7-alpine
+        # BullMQ requires that Redis never evicts keys; AOF keeps queued and
+        # delayed jobs across restarts.
+        command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+        ports:
+            - '${REDIS_PORT:-6379}:6379'
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 5s
+            timeout: 3s
+            retries: 10
+
+volumes:
+    postgres-data:
+    redis-data:
