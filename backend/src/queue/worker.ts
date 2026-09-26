@@ -65,7 +65,11 @@ export function createProcessor(deps: EngineDeps) {
             const execution = await startExecution({
                 workflow,
                 triggerType: 'schedule',
-                payload: { scheduledAt: new Date(job.timestamp).toISOString() },
+                // A scheduler job is created one tick ahead as a delayed job:
+                // the time it was meant to fire is its creation time plus the delay.
+                payload: {
+                    scheduledAt: new Date(job.timestamp + (job.opts.delay ?? 0)).toISOString(),
+                },
             })
             return { outcome: 'started', executionId: execution.id }
         }
