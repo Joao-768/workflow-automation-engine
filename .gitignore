@@ -35,3 +35,8 @@ pnpm-debug.log*
 ._*
 .Spotlight-V100
 .Trashes
+
+# Test artifacts
+test-results/
+playwright-report/
+coverage/
