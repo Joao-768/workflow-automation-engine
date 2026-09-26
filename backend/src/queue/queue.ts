@@ -58,14 +58,16 @@ export async function enqueueNode(
     options: { maxAttempts: number; delayMs?: number },
 ): Promise<void> {
     await getQueue().add(JOB.runNode, data, {
-        // A stable id means the same node of the same execution can only be
-        // queued once, which guards against accidental double execution.
+        // A stable id means the same node of the same execution cannot be
+        // queued twice while a copy is still pending or running. Once the job
+        // is done it is removed; from then on the claim check in the executor
+        // is what rejects a stale duplicate.
         jobId: `exec-${data.executionId}-${data.nodeId}`,
         attempts: options.maxAttempts,
         backoff: { type: 'exponential', delay: env.RETRY_BACKOFF_MS },
         delay: options.delayMs,
-        removeOnComplete: { age: 24 * 3600, count: 5000 },
-        removeOnFail: { age: 7 * 24 * 3600 },
+        removeOnComplete: true,
+        removeOnFail: { age: 24 * 3600 },
     })
 }
 
