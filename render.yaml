@@ -1,18 +1,65 @@
+# Render Blueprint for the backend: API, worker and Redis.
+# The frontend is a static site on Vercel (frontend/vercel.json).
+#
+# PostgreSQL is external (Render Postgres, Supabase, Neon...): set
+# DATABASE_URL on the shared env group after the first sync.
+#
+# Plans: the API and Key Value fit the free tier. A Background Worker has
+# no free tier on Render, so the worker needs a paid instance (starter).
+# Without a worker, executions are recorded as queued but never run.
+
+envVarGroups:
+    - name: workflow-engine-shared
+      envVars:
+          - key: NODE_ENV
+            value: production
+          - key: DATABASE_URL
+            sync: false
+          - key: DATABASE_SSL
+            value: 'true'
+          - key: JWT_SECRET
+            generateValue: true
+          - key: QUEUE_PREFIX
+            value: wae
+
 services:
-  - type: web
-    name: workflow-automation-engine-api
-    runtime: node
-    rootDir: backend
-    plan: free
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
-    healthCheckPath: /health
-    envVars:
-      - key: DATABASE_URL
-        sync: false
-      - key: JWT_SECRET
-        generateValue: true
-      - key: FRONTEND_URL
-        sync: false
-      - key: DATABASE_SSL
-        value: "true"
+    - type: keyvalue
+      name: workflow-engine-redis
+      plan: free
+      # BullMQ must never have its keys evicted.
+      maxmemoryPolicy: noeviction
+      ipAllowList: []
+
+    - type: web
+      name: workflow-automation-engine-api
+      runtime: node
+      plan: free
+      buildCommand: npm ci && npm run build -w shared && npm run build -w backend
+      # Migrations run on every start; an advisory lock makes that safe.
+      startCommand: npm run migrate:prod -w backend && npm run start -w backend
+      healthCheckPath: /health
+      envVars:
+          - fromGroup: workflow-engine-shared
+          - key: REDIS_URL
+            fromService:
+                type: keyvalue
+                name: workflow-engine-redis
+                property: connectionString
+          - key: FRONTEND_URL
+            sync: false
+
+    - type: worker
+      name: workflow-automation-engine-worker
+      runtime: node
+      plan: starter
+      buildCommand: npm ci && npm run build -w shared && npm run build -w backend
+      startCommand: npm run start:worker -w backend
+      envVars:
+          - fromGroup: workflow-engine-shared
+          - key: REDIS_URL
+            fromService:
+                type: keyvalue
+                name: workflow-engine-redis
+                property: connectionString
+          - key: WORKER_CONCURRENCY
+            value: '5'

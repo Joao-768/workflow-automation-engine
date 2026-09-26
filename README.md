@@ -1,205 +1,524 @@
 # Workflow Automation Engine
 
-Workflow automation platform. Users define rules in a **WHEN / IF / DO**
-format; the system receives events and automatically runs the configured
-actions.
+A small, event-driven workflow automation platform in the spirit of Zapier,
+n8n or GitHub Actions. You draw a workflow as a graph in a visual builder;
+events, webhooks, cron schedules and manual runs start it; a queue-backed
+worker executes it one node at a time and stores a trace of every step.
 
 ```
-WHEN   User created
-IF     (always)
-DO     Send email to {{email}}
+WHEN   webhook received
+IF     event.country equals "PT"
+DO     HTTP request  ->  create record
+ELSE   notification
 ```
 
-When an event arrives, the system looks up the active workflows for that
-trigger, evaluates each one's condition and runs its action. Every run is
-recorded in the history.
+It is a portfolio project. It does not try to compete with those products; it
+exists to show the backend concepts underneath them, implemented end to end
+and small enough to read in an afternoon.
+
+## What it does
+
+- **Visual builder** (React Flow): palette, canvas, inspector, live validation,
+  save, run with a JSON payload, activate / deactivate.
+- **Graph execution** on the backend: the graph you save is the graph the
+  worker walks. Conditions take a real true / false branch.
+- **Four triggers**: manual, named events, public webhooks (optional secret),
+  cron schedules.
+- **Seven node types**: trigger, condition, delay, HTTP request, notification,
+  email, create record.
+- **Queue + worker** (BullMQ on Redis): the API never runs workflow steps;
+  a separate process does.
+- **Retries with exponential backoff**, per-node timeouts and delays that
+  resume through the queue instead of sleeping.
+- **Execution history**: every attempt of every node with input, output,
+  error, attempt number and duration. The execution page draws the exact
+  version of the graph that ran, with each node marked.
+- **Versioned workflows**: every saved graph is a snapshot; old executions
+  keep pointing at the version they ran.
+- **Accounts** with JWT auth and strict per-user isolation.
+- **Dashboard**, **playground** (event simulator), **records** viewer and
+  **settings**.
+
+## Architecture
 
 ```
-EVENT -> TRIGGER -> WORKFLOW -> ACTION -> EXECUTION
+Trigger (manual run / event / webhook / cron tick)
+   │
+   ▼
+API or scheduler ── startExecution() ──▶ PostgreSQL: executions row, status "queued"
+   │
+   ▼
+BullMQ (Redis): job "run-node" { executionId, nodeId: trigger }
+   │
+   ▼
+Worker process ──▶ Workflow engine: executeNodeJob()
+   │                   1. claim the node (guards against duplicates)
+   │                   2. load the workflow version + rebuild context
+   │                   3. prepare input (templates) and run the node
+   │                   4. store the step, pick the next node
+   │                   5. enqueue it (delayed, for Delay nodes)
+   ▼
+PostgreSQL: execution_steps rows, execution status success / failed
 ```
 
-## Stack
+Three processes, two data stores:
 
-- **Frontend:** React, TypeScript, Vite, React Router
-- **Backend:** Node.js, TypeScript, Express
-- **Database:** PostgreSQL
-- **Auth:** JWT, passwords hashed with bcrypt
+| Process | Runs | Talks to |
+| --- | --- | --- |
+| API (`backend/src/server.ts`) | Express: auth, CRUD, triggers | Postgres, Redis (enqueue only) |
+| Worker (`backend/src/worker.ts`) | BullMQ worker + workflow engine | Postgres, Redis, the outside world |
+| Frontend (`frontend/`) | React SPA | the API |
 
-## How it works
+### One job per node
 
-An event comes in through `POST /events`:
+The central design decision: **a BullMQ job executes exactly one node of one
+execution**, then enqueues the next node. An execution is a chain of jobs.
+
+That single rule gives the rest almost for free:
+
+- **Retries** are BullMQ `attempts` + exponential backoff on the node's job.
+  Only the failing node is retried, never the steps before it.
+- **Delays** are just the next node's job enqueued with `delay: ms`. Nothing
+  sleeps, the worker keeps serving other executions, and the wait survives
+  a worker restart because it lives in Redis.
+- **Workers are stateless.** Each job rebuilds its context (event payload and
+  outputs of earlier steps) from Postgres, so any worker can run any step.
+- **Isolation.** One execution failing, even the engine throwing, only fails
+  that execution's job.
+
+### Execution lifecycle
+
+```
+queued ──▶ running ──▶ success
+              │  ▲
+              ▼  │
+            waiting        (a Delay node is holding the execution)
+              │
+              ▼
+            failed         (with the node id and the reason)
+```
+
+Step statuses: `running`, `success`, `retrying` (this attempt failed, another
+is scheduled), `failed`, `waiting` (a delay in progress) and `skipped` (the
+node sat on a branch that was not taken).
+
+### Avoiding double execution
+
+- Node jobs have a stable id, `exec-<executionId>-<nodeId>`, so the same node
+  cannot be queued twice while a copy is pending or running.
+- Before running, a job *claims* its node with a guarded `UPDATE`: the
+  execution must still be in progress and its cursor must point at this
+  node. A stale or duplicate job does nothing.
+- The Create record node writes with a unique `(execution_id, node_id)`
+  constraint, so a retried step cannot create the record twice.
+
+## The workflow graph
+
+A workflow's `definition` is JSONB with nodes and edges:
 
 ```json
 {
-  "type": "user.created",
-  "data": { "userId": 45, "email": "ana@mail.com", "name": "Ana" }
+    "nodes": [
+        { "id": "trigger", "type": "trigger", "position": { "x": 0, "y": 0 },
+          "config": { "type": "event", "eventName": "order.created" } },
+        { "id": "is_large", "type": "condition", "position": { "x": 0, "y": 140 },
+          "config": { "path": "event.total", "operator": "gt", "value": "100" } },
+        { "id": "notify", "type": "notification", "position": { "x": 0, "y": 280 },
+          "config": { "message": "Order {{event.orderId}}: {{event.total}}" } }
+    ],
+    "edges": [
+        { "id": "e1", "source": "trigger", "target": "is_large" },
+        { "id": "e2", "source": "is_large", "target": "notify", "sourceHandle": "true" }
+    ]
 }
 ```
 
-For each workflow matching the trigger, the engine does three things:
+The types and Zod schemas live once, in `shared/`, and are used by the API,
+the worker and the builder. Validation (`shared/src/validation.ts`) enforces:
 
-1. **Evaluates the condition** (`engine/conditions.ts`) — if it doesn't pass,
-   the execution is recorded as `skipped` and the action never runs.
-2. **Runs the action** (`engine/actions.ts`) — if it throws, the status is
-   `failed` and the error is stored.
-3. **Records the execution** (`engine/runner.ts`) along with the triggering
-   event and the result.
+- exactly one trigger, and nothing connects into it
+- every edge joins two existing nodes
+- conditions leave through `true` / `false`; other nodes have one way out
+- no cycles (this version has no loops)
+- every node is reachable from the trigger
+- every node's config is complete (a valid cron, a URL, a message...)
+- `{{steps.<id>}}` references point at a node that runs *before* this one
 
-Each workflow is handled in isolation: if one fails, the rest still run.
+A draft can be saved in any state as long as it is a well-formed graph. It
+must pass validation to be activated or run, and an active workflow cannot be
+saved into an invalid state.
 
-There are no external integrations in this version, so actions are simulated —
-each one returns an object describing what it would have done.
+Queryable facts stay in real columns: `trigger_type`, `trigger_event`,
+`is_active`, `version`, `webhook_id`, timestamps.
 
-### Event data in actions
+## Triggers
 
-Action fields accept `{{field}}`, replaced by the value carried in the event.
-This is what lets a single workflow serve each user with their own data instead
-of a hardcoded recipient:
+| Trigger | Starts when | Payload (`event`) |
+| --- | --- | --- |
+| Manual | You press Run in the builder (works while inactive) | the JSON you enter |
+| Event | `POST /events { type, data }` for your account, e.g. from the playground | `data` |
+| Webhook | Anyone `POST`s JSON to `/webhooks/<id>` | the request body |
+| Schedule | The cron expression fires (five fields, with timezone) | `{ scheduledAt }` |
+
+Event names are free-form (`order.created`, `invoice.paid`...). The four V1
+events are kept as presets with example payloads.
+
+**Webhooks** get a random 32-character id, never derived from the numeric
+workflow id. An optional secret is generated server-side, shown once, and
+stored only as a SHA-256 hash; callers send it in `X-Webhook-Secret`. Unknown,
+inactive and non-webhook ids all answer the same 404. The response is `202`
+with the execution id.
+
+**Schedules** are BullMQ job schedulers. They are synced whenever a workflow
+is created, edited, activated, deactivated or deleted, and the worker
+reconciles all of them against Postgres at startup and every five minutes.
+
+## Nodes
+
+| Node | Does | Output |
+| --- | --- | --- |
+| Condition | Compares a context value; picks the true or false branch | `{ result, left, operator, right }` |
+| Delay | Resumes the next node after N seconds / minutes / hours (max 7 days) | `{ waitedMs, resumeAt }` |
+| HTTP request | A real request: method, URL, query, headers, JSON or text body, timeout | `{ status, body, contentType, durationMs, truncated }` |
+| Notification | An internal, simulated notification | `{ level, message, deliveredAt }` |
+| Email | Sends over SMTP when configured; otherwise simulated and marked so | `{ delivery, simulated, messageId, to }` |
+| Create record | Writes JSON into the `records` table (see the Records page) | `{ id, collection, data }` |
+
+### Conditions
+
+Operators: `equals`, `not_equals`, `gt`, `gte`, `lt`, `lte`, `contains`,
+`not_contains`, `exists`, `not_exists`. No `eval`, no expression language:
+chain several condition nodes for more complex logic.
+
+The left side is a **path** (`event.total`, `event.customer.country`,
+`steps.http_1.body.id`). The right side comes from a text field and is
+coerced towards the left value's type: `"100"` becomes `100` when comparing
+with a number, `"true"` becomes `true` for a boolean, `"null"` becomes `null`.
+Ordering operators only compare numbers. A missing left value makes every
+comparison false, which is what `exists` is for.
+
+### HTTP request safety
+
+- **SSRF guard**: the host is resolved and every address is checked against
+  loopback, private, link-local, CGNAT and multicast ranges. The check runs in
+  the socket's own DNS lookup, so the checked address is the one connected to.
+  Set `HTTP_ALLOW_PRIVATE_NETWORKS=true` locally to call services on your
+  machine.
+- Timeout per node (max 30 s), response read limit (1 MB), stored body limit
+  (16 kB). Redirects are not followed.
+- Headers and query parameters that look like credentials (`Authorization`,
+  `api_key`, `token`...) are sent but redacted in the stored trace.
+
+## Templates
+
+Any string in a node's config can contain `{{ path }}`:
 
 ```
-to:       {{email}}                  ->  ana@mail.com
-subject:  Welcome, {{name}}!         ->  Welcome, Ana!
+{{event.email}}               the trigger payload
+{{event.customer.name}}       nested fields
+{{event.items.0.sku}}         array items by index
+{{steps.http_1.body.id}}      output of an earlier node
+{{trigger.receivedAt}}        {{execution.id}}
+{{email}}                     V1 shorthand for {{event.email}}
 ```
 
-A field the event doesn't carry is left as-is (`{{phone}}`) rather than turning
-into `undefined`, so the history shows what was missing.
+Behaviour (`shared/src/template.ts`):
 
-### Execution statuses
+1. Objects and arrays are resolved recursively (JSON bodies, record data).
+2. A string that is *only* a placeholder keeps the value's type:
+   `"{{event.total}}"` becomes the number `149.99`.
+3. Inside longer text, values are stringified; objects become JSON, `null`
+   becomes an empty string.
+4. **A missing variable fails the step** with `template_error` listing every
+   missing path. It never becomes the text `undefined`. The step is not
+   retried, since the same input would fail again.
 
-| Status | Meaning |
-|--------|---------|
-| `success` | The condition passed and the action ran |
-| `skipped` | The condition didn't pass, the action never ran |
-| `failed` | The action ran but threw |
+## Retries and failures
 
-## Triggers and actions
+| Situation | Code | Retried? |
+| --- | --- | --- |
+| Timeout, connection reset | `http_timeout`, `http_network` | yes |
+| HTTP 5xx, 429 | `http_status` | yes |
+| HTTP 4xx | `http_status` | no |
+| Missing template variable | `template_error` | no |
+| Private / invalid URL | `http_blocked`, `invalid_url` | no |
+| Unknown exception in a node | `node_exception` | yes |
+| Graph no longer valid | `invalid_workflow` | no |
+| Redis down when starting | `queue_failure` (API answers 503) | no |
 
-| Trigger | Event fields |
-|---------|--------------|
-| `order.created` | `total`, `orderId`, `customer`, `email` |
-| `user.created` | `userId`, `email`, `name` |
-| `payment.completed` | `amount`, `paymentId` |
-| `form.submitted` | `formId`, `field` |
+Attempts: HTTP and email 3 by default (configurable 1 to 5), records 2,
+everything deterministic 1. Backoff doubles from `RETRY_BACKOFF_MS`
+(2 s, 4 s, 8 s). Each attempt is its own step row, so the execution page shows
+`retrying`, `retrying`, `failed` with the reason on each.
 
-**Actions** and the config each one stores as JSONB:
+API errors always look like
+`{ "error": { "code": "...", "message": "...", "details": ... } }`. Unexpected
+errors are logged in full and answered with a generic 500.
 
-```json
-send_notification  { "message": "..." }
-send_email         { "to": "...", "subject": "..." }
-create_record      { "table": "...", "fields": "..." }
-```
+## Stack
 
-**Conditions** compare an event field against a value using one of the three
-operators the engine knows: `>`, `<`, `==`. A workflow with no condition always
-runs.
-
-```json
-{ "field": "total", "operator": ">", "value": 100 }
-```
-
-The form builds this from dropdowns — the field comes from the selected trigger
-and the operator from the list above, so it's not possible to save a condition
-that would only blow up at runtime.
-
-## API
-
-Apart from register and login, every route requires
-`Authorization: Bearer <token>`. Each user only ever sees their own workflows
-and executions.
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/auth/register` | Create an account, returns a token |
-| POST | `/auth/login` | Authenticate, returns a token |
-| GET | `/workflows` | List the user's workflows |
-| POST | `/workflows` | Create |
-| GET | `/workflows/:id` | Read one |
-| PUT | `/workflows/:id` | Update |
-| DELETE | `/workflows/:id` | Delete (along with its history) |
-| PATCH | `/workflows/:id/toggle` | Enable/disable |
-| POST | `/events` | Receive an event and run the workflows |
-| GET | `/executions` | Execution history |
-| GET | `/executions/:id` | Single execution detail |
-| GET | `/health` | Database connection status |
-
-`POST` and `PUT` go through validation middleware that rejects missing fields
-or triggers and actions outside the allowed list, returning `400`.
+| Layer | Tools |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite, React Router, React Flow (`@xyflow/react`), lucide icons |
+| Backend | Node.js, TypeScript, Express 5, Zod, Pino, Helmet, express-rate-limit |
+| Queue | BullMQ on Redis (ioredis) |
+| Database | PostgreSQL with `pg` and plain SQL migrations |
+| Auth | bcrypt, JWT (HS256, expiring) |
+| Email | nodemailer (optional SMTP) |
+| Tests | Vitest, Supertest, Playwright |
+| Tooling | npm workspaces, oxlint, Prettier |
 
 ## Database
 
-```sql
-users
-  id, name, email, password_hash, created_at
-
-workflows
-  id, name, description, user_id, created_at
-  trigger_type      -- column: this is what workflows are looked up by
-  conditions        -- JSONB, optional
-  action_type       -- column: decides which handler runs
-  action_config     -- JSONB, shape varies per action
-  is_active
-
-executions
-  id, workflow_id, status, executed_at
-  event_data        -- the event that triggered it
-  result            -- what the action returned, or the error
+```
+users              id, name, email, password_hash, created_at
+workflows          id, user_id, name, description, definition (JSONB), version,
+                   trigger_type, trigger_event, is_active, webhook_id,
+                   webhook_secret_hash, created_at, updated_at, deleted_at
+workflow_versions  (workflow_id, version) -> definition        immutable snapshots
+executions         id, user_id, workflow_id, workflow_version, status,
+                   trigger_type, trigger_data, current_node_id, error,
+                   created_at, started_at, finished_at, duration_ms
+execution_steps    id, execution_id, node_id, node_type, status, attempt,
+                   max_attempts, input, output, error, started_at,
+                   finished_at, duration_ms
+records            id, user_id, workflow_id, execution_id, node_id,
+                   collection, data (JSONB), created_at
 ```
 
-Anything queried or driving a decision is a column; anything whose shape varies
-by type is JSONB. Deleting a user deletes their workflows, and deleting a
-workflow deletes its executions (`ON DELETE CASCADE`).
+- Deleting a workflow is a **soft delete** (`deleted_at`). Its executions and
+  version snapshots stay, so history is never lost. Executions reference
+  `(workflow_id, workflow_version)` with a foreign key and no cascade.
+- Indexes cover the hot paths: a user's workflows, active event workflows by
+  name, a user's executions by date and status, steps by execution.
+- Every query serving a request filters on `user_id`. Guessing another
+  account's ids returns 404.
 
-## Layout
+### Migrations
 
-```
-backend/src
-  db/          Postgres connection and schema
-  engine/      domain logic (knows nothing about Express)
-  middleware/  JWT verification
-  routes/      HTTP layer
+Plain SQL files in `backend/migrations`, applied in order by
+`backend/src/db/migrate.ts`, each in its own transaction, recorded in
+`schema_migrations`, under an advisory lock.
 
-frontend/src
-  pages/       landing, auth, dashboard, workflows, simulator, history
-  schema.ts    triggers, fields and actions the form offers
-  types.ts
-```
+- `001_v1_schema.sql` is the original V1 schema, idempotent. A database that
+  was created by hand from V1's `schema.sql` is adopted as-is.
+- `002_graph_workflows.sql` converts it to V2. Each V1 workflow (one trigger,
+  optional condition, one action) becomes the graph
+  `trigger -> [condition -true->] action`, with operators `>`, `<`, `==`
+  mapped to `gt`, `lt`, `equals` and `{{field}}` templates left as they were
+  (they still resolve). V1 executions are kept: `skipped` becomes `success`
+  (the condition was false, the run did not fail) and each one gets trigger
+  and action steps from its old result.
 
-The engine imports nothing from Express. It takes data and returns results, so
-it can be driven from somewhere else unchanged.
+A V1 workflow whose action was never fully configured (for example an email
+with no recipient) is converted faithfully and simply shows validation issues
+in the builder until it is completed.
 
-## Running it
+## Getting started
 
-Requires PostgreSQL running locally.
+Requirements: Node.js 22+, npm, Docker (or local PostgreSQL 14+ and Redis 7+).
 
 ```bash
-createdb workflow_automation_engine
-psql workflow_automation_engine -f backend/src/db/schema.sql
-```
-
-**Backend** (port 3000)
-
-```bash
-cd backend
+# 1. Install (npm workspaces: one install for everything; also builds shared/)
 npm install
-cp .env.example .env    # set DATABASE_URL and JWT_SECRET
+
+# 2. Configure
+cp backend/.env.example backend/.env        # adjust DATABASE_URL, JWT_SECRET
+cp frontend/.env.example frontend/.env      # optional, defaults to localhost:3000
+
+# 3. Start Postgres and Redis
+docker compose up -d
+#    already running Postgres locally? then only:  docker compose up -d redis
+
+# 4. Create the schema
+npm run migrate
+
+# 5. Optional: demo account with example workflows
+npm run seed                                 # demo@example.com / demo12345
+
+# 6. Run API + worker + frontend together
 npm run dev
 ```
 
-**Frontend** (port 5173)
+Or in separate terminals: `npm run dev:api`, `npm run worker`,
+`npm run dev:web`.
+
+| Service | URL |
+| --- | --- |
+| Frontend | http://localhost:5174 |
+| API | http://localhost:3000 (`/health` checks Postgres and Redis) |
+
+Port 5174 is pinned (`strictPort`) in `frontend/vite.config.ts`.
+
+### Demo workflows (`npm run seed`)
+
+| Workflow | Shows |
+| --- | --- |
+| Large order alert | Event `order.created`, condition `total > 100`, notification then record |
+| Portuguese customer webhook | Webhook, condition `country equals PT`, real HTTP call (httpbin.org) then record; else notification |
+| Delayed welcome | Event `user.created`, 30 second delay, email |
+| Minute heartbeat | Schedule `* * * * *` writing a record each minute (inactive until you enable it) |
+| Flaky endpoint | Manual; an HTTP call that always returns 500, to watch three attempts and the failure |
+
+Try it: fire `order.created` from the Playground with the default payload,
+then with `"total": 40`, and compare the two executions.
+
+## Environment variables
+
+Backend (`backend/.env`, validated at startup by `src/config/env.ts`):
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | required | PostgreSQL connection string |
+| `DATABASE_SSL` | `false` | `true` for managed Postgres |
+| `REDIS_URL` | `redis://localhost:6379` | BullMQ connection |
+| `QUEUE_PREFIX` | `wae` | Redis key prefix (tests use their own) |
+| `JWT_SECRET` | required | 16+ chars, 32+ in production |
+| `JWT_EXPIRES_IN` | `7d` | token lifetime |
+| `FRONTEND_URL` | `http://localhost:5174` | CORS origins, comma-separated |
+| `PORT` | `3000` | API port |
+| `WORKER_CONCURRENCY` | `5` | jobs per worker process |
+| `RETRY_BACKOFF_MS` | `2000` | first retry delay, doubles each time |
+| `NODE_TIMEOUT_MS` | `30000` | hard limit for any node |
+| `HTTP_ALLOW_PRIVATE_NETWORKS` | `false` | allow HTTP nodes to reach localhost / private IPs |
+| `HTTP_MAX_RESPONSE_BYTES` | `1000000` | response read limit |
+| `SMTP_HOST` ... `SMTP_FROM` | empty | real email; empty means simulated |
+| `LOG_LEVEL` | `info` | Pino level (pretty in development, JSON otherwise) |
+
+Frontend (`frontend/.env`): `VITE_API_URL`, default `http://localhost:3000`.
+
+## Tests
 
 ```bash
-cd frontend
-npm install
-npm run dev
+npm test              # shared + backend: unit and integration (needs Postgres + Redis)
+npm run test:unit     # unit tests only, no services needed
+npm run test:e2e      # Playwright happy path (needs the stack running, incl. a worker)
+npm run typecheck
+npm run lint          # oxlint + Prettier check
 ```
 
-Create an account at `/register`, define a workflow, then fire an event from
-the simulator to watch it run.
+- **Unit** (`shared/src/*.test.ts`, `backend/src/**/*.test.ts`): template
+  resolution, graph validation, traversal and branch selection, condition
+  semantics, retry decisions, HTTP input resolution and redaction, the SSRF
+  guard.
+- **Integration** (`backend/test`): the real API, queue and an in-process
+  worker against a throwaway database (`workflow_automation_engine_test`,
+  recreated on every run) and a separate Redis prefix. External HTTP is a
+  local mock server; email is captured in memory. Covers auth, isolation
+  between two users, workflow management and versioning, schedules in Redis,
+  and every execution scenario: true / false branches, webhooks and secrets,
+  manual runs, schedule ticks, retries (500 then success, 500 until failure,
+  4xx not retried, timeouts), missing variables, delays, disabled workflows,
+  history filters and the dashboard.
+- **E2E** (`frontend/e2e`): register, create a workflow in the builder, add a
+  node, save, run, open the resulting execution.
 
-## Status
+## Deployment
 
-V1 complete: authentication with per-user data isolation, workflow CRUD,
-execution engine, event simulator and history.
+The frontend is static; the backend needs **three** things: the API, a
+**separate worker process**, and Redis. The worker cannot run inside Vercel
+or inside the API's request handling.
 
-Planned for V2: visual node builder with drag & drop, IF/ELSE branching and
-multiple actions per workflow.
+| Piece | Where | Notes |
+| --- | --- | --- |
+| Frontend | Vercel, root directory `frontend` | `frontend/vercel.json` installs from the monorepo root. Set `VITE_API_URL` to the API URL. |
+| API | Render web service | `render.yaml`. Runs migrations on start (advisory-locked), then `node dist/server.js`. |
+| Worker | Render background worker | Same build, `node dist/worker.js`. Needs a paid instance on Render. |
+| Redis | Render Key Value | `maxmemoryPolicy: noeviction`, required by BullMQ. |
+| PostgreSQL | Render Postgres, Supabase, Neon... | Set `DATABASE_URL`, `DATABASE_SSL=true`. |
+
+After the first Render sync: set `DATABASE_URL` on the
+`workflow-engine-shared` env group and `FRONTEND_URL` (the Vercel URL) on the
+API. `JWT_SECRET` is generated.
+
+Differences between environments:
+
+| | Development | Production |
+| --- | --- | --- |
+| Logs | pretty | JSON |
+| Processes | `tsx watch` | compiled `dist/` |
+| HTTP to private networks | can be enabled | blocked |
+| Email | simulated unless SMTP is set | SMTP if configured |
+| Rate limits | on | on (in-memory, per API instance) |
+
+## API overview
+
+All routes except register, login and webhooks need `Authorization: Bearer <token>`.
+
+| Method | Route | |
+| --- | --- | --- |
+| POST | `/auth/register`, `/auth/login` | returns `{ token, user }` |
+| GET / PATCH | `/auth/me` | current account / rename |
+| POST | `/auth/me/password` | change password |
+| GET / POST | `/workflows` | list / create |
+| GET / PUT / DELETE | `/workflows/:id` | read / update / soft delete |
+| POST | `/workflows/:id/activate`, `/deactivate` | 422 with issues if invalid |
+| POST | `/workflows/:id/duplicate` | inactive copy |
+| POST | `/workflows/:id/run` | manual run, `{ payload }`, answers 202 |
+| POST / DELETE | `/workflows/:id/webhook-secret` | create (shown once) / remove |
+| POST | `/events` | `{ type, data }`, answers 202 with matched executions |
+| POST | `/webhooks/:webhookId` | public, answers 202 `{ status, executionId }` |
+| GET | `/executions` | `page, pageSize, workflowId, status, triggerType, from, to` |
+| GET | `/executions/:id` | detail with steps and the graph version |
+| GET | `/records`, `/records/collections` | data written by Create record |
+| GET | `/dashboard` | health numbers, 14-day series, recent executions |
+| GET | `/health` | Postgres and Redis status |
+
+## Project layout
+
+```
+shared/src              used by API, worker and builder
+  constants.ts          node types, operators, statuses (no magic strings)
+  definition.ts         Zod schemas for the graph and every node config
+  validation.ts         graph rules
+  graph.ts              traversal helpers: next node, reachability, cycles
+  template.ts           {{ }} resolver
+  paths.ts              safe path lookup, execution context type
+  api.ts                response types shared with the frontend
+
+backend/
+  migrations/           001 (V1 schema), 002 (V2 conversion)
+  src/server.ts         API entry point
+  src/worker.ts         worker entry point
+  src/engine/           executor, node handlers, conditions, retry policy
+  src/queue/            BullMQ queue, job types, worker processor
+  src/services/         use cases: start executions, workflows, triggers, schedules
+  src/repositories/     SQL, one module per table group
+  src/http/             Express app, routes, request schemas, errors, rate limits
+  src/adapters/         HTTP client (SSRF guard), email (SMTP or simulated)
+  src/auth/             bcrypt, JWT, authenticated request type
+  test/                 integration tests
+
+frontend/src/
+  features/builder/     canvas, palette, inspector, node forms, state hook
+  features/executions/  history, detail page, execution graph
+  pages/                dashboard, workflows, playground, records, settings, auth
+  api/                  typed API client
+```
+
+## Reading the engine
+
+If you want to understand how a workflow runs, read in this order:
+
+1. `shared/src/definition.ts` and `shared/src/validation.ts`: what a workflow is.
+2. `backend/src/services/executions.ts`: how every trigger starts an execution.
+3. `backend/src/engine/executor.ts`: one node per job, the whole lifecycle.
+4. `backend/src/engine/nodes/`: the handler contract and each node type.
+5. `backend/src/queue/queue.ts` and `queue/worker.ts`: how jobs, retries,
+   delays and schedules map onto BullMQ.
+6. `shared/src/template.ts` and `backend/src/engine/conditions.ts`: data flow
+   between nodes.
+7. `backend/test/engine.test.ts`: every scenario, end to end.
+
+## Known limits
+
+- No loops, parallel branches or joins that wait for several branches: one
+  path runs at a time, by design.
+- No cancellation of running executions.
+- Rate limits are in memory, so they apply per API instance.
+- Enqueuing the next node happens right after the database commit; if Redis
+  fails in that instant the execution is marked `queue_failure` rather than
+  retried later (a transactional outbox would close that gap).
+- If you wipe the database, clear Redis too (`docker compose down -v`).
+  Failed jobs are kept in Redis for a day under ids like `exec-12-http_1`; a
+  fresh database reusing execution ids would collide with them.
