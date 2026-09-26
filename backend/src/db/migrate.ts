@@ -31,7 +31,9 @@ export async function runMigrations(db: Pool = pool): Promise<string[]> {
         `)
 
         const done = new Set(
-            (await client.query<{ name: string }>('SELECT name FROM schema_migrations')).rows.map((r) => r.name),
+            (await client.query<{ name: string }>('SELECT name FROM schema_migrations')).rows.map(
+                (r) => r.name,
+            ),
         )
         const files = fs
             .readdirSync(MIGRATIONS_DIR)
@@ -63,7 +65,10 @@ export async function runMigrations(db: Pool = pool): Promise<string[]> {
 if (require.main === module) {
     runMigrations()
         .then((applied) => {
-            logger.info({ applied: applied.length }, applied.length ? 'Migrations complete' : 'Database already up to date')
+            logger.info(
+                { applied: applied.length },
+                applied.length ? 'Migrations complete' : 'Database already up to date',
+            )
         })
         .catch((err) => {
             logger.error({ err }, 'Migration failed')

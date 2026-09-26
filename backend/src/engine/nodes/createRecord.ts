@@ -18,7 +18,11 @@ export const createRecordNode = defineNode<'create_record', { collection: string
     async run(input, node, runtime) {
         const size = JSON.stringify(input.data).length
         if (size > 100_000) {
-            throw new NodeError('record_too_large', `The record is ${size} bytes; the limit is 100000`, false)
+            throw new NodeError(
+                'record_too_large',
+                `The record is ${size} bytes; the limit is 100000`,
+                false,
+            )
         }
         const { record, created } = await runtime.services.createRecord({
             userId: runtime.execution.userId,
@@ -34,7 +38,9 @@ export const createRecordNode = defineNode<'create_record', { collection: string
                 collection: record.collection,
                 data: record.data,
                 createdAt: record.createdAt,
-                ...(created ? {} : { note: 'Record already existed for this step; not written twice' }),
+                ...(created
+                    ? {}
+                    : { note: 'Record already existed for this step; not written twice' }),
             },
         }
     },

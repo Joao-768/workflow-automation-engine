@@ -124,7 +124,10 @@ export const MAX_ATTEMPTS_LIMIT = 5
 
 export type NodeCategory = 'trigger' | 'logic' | 'action'
 
-export const NODE_META: Record<NodeType, { label: string; description: string; category: NodeCategory }> = {
+export const NODE_META: Record<
+    NodeType,
+    { label: string; description: string; category: NodeCategory }
+> = {
     trigger: {
         label: 'Trigger',
         description: 'Where every execution starts.',

@@ -73,7 +73,11 @@ export async function enqueueNode(
 
 const schedulerId = (workflowId: number) => `workflow-${workflowId}`
 
-export async function upsertSchedule(workflowId: number, cron: string, timezone: string): Promise<void> {
+export async function upsertSchedule(
+    workflowId: number,
+    cron: string,
+    timezone: string,
+): Promise<void> {
     await getQueue().upsertJobScheduler(
         schedulerId(workflowId),
         { pattern: cron, tz: timezone },
@@ -92,6 +96,8 @@ export async function removeSchedule(workflowId: number): Promise<void> {
 export async function listScheduledWorkflowIds(): Promise<number[]> {
     const schedulers = await getQueue().getJobSchedulers(0, -1)
     return schedulers
-        .map((scheduler) => Number(String(scheduler.key ?? scheduler.id ?? '').replace('workflow-', '')))
+        .map((scheduler) =>
+            Number(String(scheduler.key ?? scheduler.id ?? '').replace('workflow-', '')),
+        )
         .filter((id) => Number.isInteger(id) && id > 0)
 }

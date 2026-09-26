@@ -79,7 +79,10 @@ export const triggerConfigSchema = z.discriminatedUnion('type', [
         type: z.literal('event'),
         eventName: z
             .string()
-            .regex(EVENT_NAME_PATTERN, 'Event names use letters, digits, dots, dashes and underscores'),
+            .regex(
+                EVENT_NAME_PATTERN,
+                'Event names use letters, digits, dots, dashes and underscores',
+            ),
     }),
     z.object({ type: z.literal('webhook') }),
     z
@@ -102,7 +105,11 @@ export const conditionConfigSchema = z
     })
     .superRefine((value, ctx) => {
         if (!UNARY_OPERATORS.includes(value.operator) && value.value === undefined) {
-            ctx.addIssue({ code: 'custom', path: ['value'], message: 'A value to compare is required' })
+            ctx.addIssue({
+                code: 'custom',
+                path: ['value'],
+                message: 'A value to compare is required',
+            })
         }
     })
 
@@ -138,10 +145,18 @@ export const httpRequestConfigSchema = z
     })
     .superRefine((value, ctx) => {
         if (value.bodyType === 'text' && typeof value.body !== 'string') {
-            ctx.addIssue({ code: 'custom', path: ['body'], message: 'A text body must be a string' })
+            ctx.addIssue({
+                code: 'custom',
+                path: ['body'],
+                message: 'A text body must be a string',
+            })
         }
         if (value.bodyType !== 'none' && value.method === 'GET') {
-            ctx.addIssue({ code: 'custom', path: ['bodyType'], message: 'GET requests cannot send a body' })
+            ctx.addIssue({
+                code: 'custom',
+                path: ['bodyType'],
+                message: 'GET requests cannot send a body',
+            })
         }
     })
 

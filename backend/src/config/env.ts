@@ -14,7 +14,9 @@ const bool = z
 const schema = z
     .object({
         NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-        LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+        LOG_LEVEL: z
+            .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+            .default('info'),
         PORT: z.coerce.number().int().positive().default(3000),
 
         DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
@@ -26,7 +28,7 @@ const schema = z
         JWT_EXPIRES_IN: z.string().default('7d'),
 
         /** Comma-separated list of origins allowed by CORS. */
-        FRONTEND_URL: z.string().default('http://localhost:5173'),
+        FRONTEND_URL: z.string().default('http://localhost:5174'),
 
         WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(50).default(5),
         /** First retry waits this long, then doubles on every attempt. */
@@ -57,7 +59,9 @@ const schema = z
 function load() {
     const parsed = schema.safeParse(process.env)
     if (!parsed.success) {
-        const lines = parsed.error.issues.map((issue) => `  ${issue.path.join('.')}: ${issue.message}`)
+        const lines = parsed.error.issues.map(
+            (issue) => `  ${issue.path.join('.')}: ${issue.message}`,
+        )
         // The logger depends on this config, so this is the one place that
         // writes to stderr directly.
         process.stderr.write(`Invalid environment configuration:\n${lines.join('\n')}\n`)

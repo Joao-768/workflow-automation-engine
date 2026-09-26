@@ -24,7 +24,12 @@ describe('workflow management', () => {
     it('creates a draft with a manual trigger by default', async () => {
         const { auth } = await registerUser()
         const res = await api().post('/workflows').set(auth).send({ name: 'Draft' }).expect(201)
-        expect(res.body).toMatchObject({ name: 'Draft', isActive: false, version: 1, triggerType: 'manual' })
+        expect(res.body).toMatchObject({
+            name: 'Draft',
+            isActive: false,
+            version: 1,
+            triggerType: 'manual',
+        })
         expect(res.body.webhook.id).toMatch(/^[a-f0-9]{32}$/)
         // A lone trigger is saved but reported as not runnable yet.
         expect(res.body.issues[0].message).toMatch(/Connect the trigger/)
@@ -46,14 +51,22 @@ describe('workflow management', () => {
                 name: 'Incomplete',
                 definition: {
                     nodes: [
-                        { id: 'trigger', type: 'trigger', position: at, config: { type: 'schedule', cron: 'every day' } },
+                        {
+                            id: 'trigger',
+                            type: 'trigger',
+                            position: at,
+                            config: { type: 'schedule', cron: 'every day' },
+                        },
                         { id: 'note', type: 'notification', position: at, config: {} },
                     ],
                     edges: [{ id: 'e1', source: 'trigger', target: 'note' }],
                 },
             })
             .expect(201)
-        const activate = await api().post(`/workflows/${incomplete.body.id}/activate`).set(auth).expect(422)
+        const activate = await api()
+            .post(`/workflows/${incomplete.body.id}/activate`)
+            .set(auth)
+            .expect(422)
         expect(activate.body.error.code).toBe('invalid_workflow')
         expect(activate.body.error.details.issues).toEqual(
             expect.arrayContaining([
@@ -68,7 +81,11 @@ describe('workflow management', () => {
         const workflow = await createWorkflow(auth, notifyOnEvent('v.test'))
         expect(workflow.version).toBe(1)
 
-        const renamed = await api().put(`/workflows/${workflow.id}`).set(auth).send({ name: 'Renamed' }).expect(200)
+        const renamed = await api()
+            .put(`/workflows/${workflow.id}`)
+            .set(auth)
+            .send({ name: 'Renamed' })
+            .expect(200)
         expect(renamed.body.version).toBe(1)
 
         const edited = await api()
@@ -81,13 +98,21 @@ describe('workflow management', () => {
         // Breaking an active workflow is refused.
         const broken = notifyOnEvent('v.test')
         broken.edges = []
-        await api().put(`/workflows/${workflow.id}`).set(auth).send({ name: 'x', definition: broken }).expect(422)
+        await api()
+            .put(`/workflows/${workflow.id}`)
+            .set(auth)
+            .send({ name: 'x', definition: broken })
+            .expect(422)
     })
 
     it('runs executions against the version they started with', async () => {
         const { auth } = await registerUser()
         const workflow = await createWorkflow(auth, notifyOnEvent('snap.test', 'first'))
-        const run = await api().post(`/workflows/${workflow.id}/run`).set(auth).send({ payload: {} }).expect(202)
+        const run = await api()
+            .post(`/workflows/${workflow.id}/run`)
+            .set(auth)
+            .send({ payload: {} })
+            .expect(202)
         await waitForExecution(auth, run.body.executionId)
 
         await api()
@@ -104,7 +129,11 @@ describe('workflow management', () => {
     it('duplicates as an inactive copy and soft-deletes without losing history', async () => {
         const { auth } = await registerUser()
         const workflow = await createWorkflow(auth, notifyOnEvent('del.test'), { name: 'Original' })
-        const run = await api().post(`/workflows/${workflow.id}/run`).set(auth).send({ payload: {} }).expect(202)
+        const run = await api()
+            .post(`/workflows/${workflow.id}/run`)
+            .set(auth)
+            .send({ payload: {} })
+            .expect(202)
         await waitForExecution(auth, run.body.executionId)
 
         const copy = await api().post(`/workflows/${workflow.id}/duplicate`).set(auth).expect(201)
@@ -113,7 +142,10 @@ describe('workflow management', () => {
 
         const list = await api().get('/workflows').set(auth).expect(200)
         const original = list.body.find((w: { id: number }) => w.id === workflow.id)
-        expect(original.lastExecution).toMatchObject({ id: run.body.executionId, status: 'success' })
+        expect(original.lastExecution).toMatchObject({
+            id: run.body.executionId,
+            status: 'success',
+        })
 
         await api().delete(`/workflows/${workflow.id}`).set(auth).expect(204)
         await api().get(`/workflows/${workflow.id}`).set(auth).expect(404)
@@ -126,7 +158,12 @@ describe('workflow management', () => {
         const { auth } = await registerUser()
         const scheduled = await createWorkflow(auth, {
             nodes: [
-                { id: 'trigger', type: 'trigger', position: at, config: { type: 'schedule', cron: '*/5 * * * *' } },
+                {
+                    id: 'trigger',
+                    type: 'trigger',
+                    position: at,
+                    config: { type: 'schedule', cron: '*/5 * * * *' },
+                },
                 { id: 'note', type: 'notification', position: at, config: { message: 'tick' } },
             ],
             edges: [{ id: 'e1', source: 'trigger', target: 'note' }],
@@ -134,7 +171,9 @@ describe('workflow management', () => {
         expect(scheduled.nextScheduledRun).toEqual(expect.any(String))
 
         const schedulerId = `workflow-${scheduled.id}`
-        expect(await getQueue().getJobScheduler(schedulerId)).toMatchObject({ pattern: '*/5 * * * *' })
+        expect(await getQueue().getJobScheduler(schedulerId)).toMatchObject({
+            pattern: '*/5 * * * *',
+        })
 
         await api().post(`/workflows/${scheduled.id}/deactivate`).set(auth).expect(200)
         expect(await getQueue().getJobScheduler(schedulerId)).toBeFalsy()
@@ -149,7 +188,10 @@ describe('workflow management', () => {
     it('returns webhook secrets once and never again', async () => {
         const { auth } = await registerUser()
         const workflow = await createWorkflow(auth, notifyOnEvent('s.test'))
-        const created = await api().post(`/workflows/${workflow.id}/webhook-secret`).set(auth).expect(201)
+        const created = await api()
+            .post(`/workflows/${workflow.id}/webhook-secret`)
+            .set(auth)
+            .expect(201)
         expect(created.body.secret).toMatch(/^whsec_/)
 
         const detail = await api().get(`/workflows/${workflow.id}`).set(auth).expect(200)

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { TemplateError, workflowNodeSchema, type ExecutionContext, type NodeOfType } from '@wae/shared'
+import {
+    TemplateError,
+    workflowNodeSchema,
+    type ExecutionContext,
+    type NodeOfType,
+} from '@wae/shared'
 import { conditionNode } from './condition'
 import { httpRequestNode } from './httpRequest'
 
@@ -31,9 +36,17 @@ describe('condition node', () => {
             id: 'c',
             type: 'condition',
             position: at,
-            config: { path: 'steps.lookup.body.id', operator: 'equals', value: '{{event.customer.id}}' },
+            config: {
+                path: 'steps.lookup.body.id',
+                operator: 'equals',
+                value: '{{event.customer.id}}',
+            },
         }) as NodeOfType<'condition'>
-        const result = await conditionNode.run(conditionNode.prepare(node, context), node, {} as never)
+        const result = await conditionNode.run(
+            conditionNode.prepare(node, context),
+            node,
+            {} as never,
+        )
         expect(result.branch).toBe('false')
     })
 })
@@ -46,7 +59,10 @@ describe('http request node', () => {
         config: {
             method: 'POST',
             url: 'https://api.example.com/customers/{{steps.lookup.body.id}}',
-            query: [{ key: 'country', value: '{{event.country}}' }, { key: 'api_key', value: '{{event.token}}' }],
+            query: [
+                { key: 'country', value: '{{event.country}}' },
+                { key: 'api_key', value: '{{event.token}}' },
+            ],
             headers: [{ key: 'Authorization', value: 'Bearer {{event.token}}' }],
             bodyType: 'json',
             body: { total: '{{event.total}}', nested: ['{{event.country}}'] },
@@ -71,7 +87,10 @@ describe('http request node', () => {
     })
 
     it('fails on missing variables instead of calling a broken URL', () => {
-        const broken = { ...node, config: { ...node.config, url: 'https://x.test/{{event.missing}}' } }
+        const broken = {
+            ...node,
+            config: { ...node.config, url: 'https://x.test/{{event.missing}}' },
+        }
         expect(() => httpRequestNode.prepare(broken, context)).toThrow(TemplateError)
     })
 })

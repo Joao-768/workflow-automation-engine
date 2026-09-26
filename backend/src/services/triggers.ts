@@ -11,15 +11,27 @@ import { hashSecret } from './workflows'
  * `eventName` gets its own execution. Each workflow is started
  * independently, so a problem with one does not stop the others.
  */
-export async function dispatchEvent(userId: number, eventName: string, data: unknown): Promise<EventResponse> {
+export async function dispatchEvent(
+    userId: number,
+    eventName: string,
+    data: unknown,
+): Promise<EventResponse> {
     const workflows = await findActiveEventWorkflows(userId, eventName)
     const matched: QueuedExecution[] = []
     let queueDown: unknown = null
 
     for (const workflow of workflows) {
         try {
-            const execution = await startExecution({ workflow, triggerType: 'event', payload: data })
-            matched.push({ workflowId: workflow.id, workflowName: workflow.name, executionId: execution.id })
+            const execution = await startExecution({
+                workflow,
+                triggerType: 'event',
+                payload: data,
+            })
+            matched.push({
+                workflowId: workflow.id,
+                workflowName: workflow.name,
+                executionId: execution.id,
+            })
         } catch (err) {
             logger.error({ err, workflowId: workflow.id }, 'Could not start workflow for event')
             queueDown = err
@@ -35,7 +47,11 @@ export async function dispatchEvent(userId: number, eventName: string, data: unk
  * unknown id, a deleted workflow, an inactive one and one whose trigger is
  * not a webhook all answer the same 404.
  */
-export async function receiveWebhook(webhookId: string, providedSecret: string | undefined, payload: unknown) {
+export async function receiveWebhook(
+    webhookId: string,
+    providedSecret: string | undefined,
+    payload: unknown,
+) {
     const workflow = await findWorkflowByWebhookId(webhookId)
     if (!workflow || !workflow.is_active || workflow.trigger_type !== 'webhook') {
         throw notFound('Webhook')
@@ -44,8 +60,12 @@ export async function receiveWebhook(webhookId: string, providedSecret: string |
     if (workflow.webhook_secret_hash) {
         const valid =
             providedSecret !== undefined &&
-            crypto.timingSafeEqual(Buffer.from(hashSecret(providedSecret)), Buffer.from(workflow.webhook_secret_hash))
-        if (!valid) throw new AppError(401, 'invalid_webhook_secret', 'Missing or invalid webhook secret')
+            crypto.timingSafeEqual(
+                Buffer.from(hashSecret(providedSecret)),
+                Buffer.from(workflow.webhook_secret_hash),
+            )
+        if (!valid)
+            throw new AppError(401, 'invalid_webhook_secret', 'Missing or invalid webhook secret')
     }
 
     return startExecution({ workflow, triggerType: 'webhook', payload })

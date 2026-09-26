@@ -1,6 +1,13 @@
 import { Router } from 'express'
 import type { AuthResponse } from '@wae/shared'
-import { authed, DUMMY_HASH, hashPassword, requireAuth, signToken, verifyPassword } from '../../auth/auth'
+import {
+    authed,
+    DUMMY_HASH,
+    hashPassword,
+    requireAuth,
+    signToken,
+    verifyPassword,
+} from '../../auth/auth'
 import { AppError, conflict, notFound, unauthorized } from '../../lib/errors'
 import * as users from '../../repositories/users'
 import { authLimiter } from '../rateLimits'
@@ -10,7 +17,8 @@ export const authRouter = Router()
 
 authRouter.post('/register', authLimiter, async (req, res) => {
     const input = registerBody.parse(req.body)
-    if (await users.findCredentialsByEmail(input.email)) throw conflict('An account with this email already exists')
+    if (await users.findCredentialsByEmail(input.email))
+        throw conflict('An account with this email already exists')
 
     const user = await users.createUser({
         name: input.name,

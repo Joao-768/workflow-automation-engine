@@ -111,15 +111,26 @@ function checkEdges(graph: WorkflowDefinition): ValidationIssue[] {
         const target = byId.get(edge.target)
 
         if (!source || !target) {
-            issues.push({ edgeId: edge.id, message: 'This connection points at a node that does not exist' })
+            issues.push({
+                edgeId: edge.id,
+                message: 'This connection points at a node that does not exist',
+            })
             continue
         }
         if (edge.source === edge.target) {
-            issues.push({ edgeId: edge.id, nodeId: edge.source, message: 'A node cannot connect to itself' })
+            issues.push({
+                edgeId: edge.id,
+                nodeId: edge.source,
+                message: 'A node cannot connect to itself',
+            })
             continue
         }
         if (target.type === 'trigger') {
-            issues.push({ edgeId: edge.id, nodeId: target.id, message: 'Nothing can connect into the trigger' })
+            issues.push({
+                edgeId: edge.id,
+                nodeId: target.id,
+                message: 'Nothing can connect into the trigger',
+            })
             continue
         }
 
@@ -181,7 +192,11 @@ function checkReferences(graph: WorkflowDefinition, nodes: WorkflowNode[]): Vali
             try {
                 paths.push(normalizePath(node.config.path).join('.'))
             } catch {
-                issues.push({ nodeId: node.id, field: 'path', message: `"${node.config.path}" is not a valid path` })
+                issues.push({
+                    nodeId: node.id,
+                    field: 'path',
+                    message: `"${node.config.path}" is not a valid path`,
+                })
                 continue
             }
         }
@@ -191,9 +206,15 @@ function checkReferences(graph: WorkflowDefinition, nodes: WorkflowNode[]): Vali
             const [root, stepId] = path.split('.')
             if (root !== 'steps') continue
             if (!stepId || !ids.has(stepId)) {
-                issues.push({ nodeId: node.id, message: `{{${path}}} refers to a node that does not exist` })
+                issues.push({
+                    nodeId: node.id,
+                    message: `{{${path}}} refers to a node that does not exist`,
+                })
             } else if (!upstream.has(stepId)) {
-                issues.push({ nodeId: node.id, message: `{{${path}}} refers to "${stepId}", which does not run before this node` })
+                issues.push({
+                    nodeId: node.id,
+                    message: `{{${path}}} refers to "${stepId}", which does not run before this node`,
+                })
             }
         }
     }
@@ -203,14 +224,15 @@ function checkReferences(graph: WorkflowDefinition, nodes: WorkflowNode[]): Vali
 function configIssues(nodeId: string, error: z.ZodError): ValidationIssue[] {
     return error.issues.map((issue) => {
         // Paths look like ["config", "cron"]: report the config field.
-        const field = issue.path[0] === 'config' ? issue.path.slice(1).join('.') : issue.path.join('.')
+        const field =
+            issue.path[0] === 'config' ? issue.path.slice(1).join('.') : issue.path.join('.')
         return { nodeId, field: field || undefined, message: issue.message }
     })
 }
 
 function structuralIssues(input: unknown, error: z.ZodError): ValidationIssue[] {
     const nodes = Array.isArray((input as { nodes?: unknown })?.nodes)
-        ? ((input as { nodes: { id?: unknown }[] }).nodes)
+        ? (input as { nodes: { id?: unknown }[] }).nodes
         : []
 
     return error.issues.map((issue) => {

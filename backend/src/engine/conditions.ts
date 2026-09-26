@@ -25,7 +25,11 @@ export type ConditionOutcome = {
     reason?: string
 }
 
-export function evaluateCondition(left: unknown, operator: ConditionOperator, rawRight: unknown): ConditionOutcome {
+export function evaluateCondition(
+    left: unknown,
+    operator: ConditionOperator,
+    rawRight: unknown,
+): ConditionOutcome {
     const right = coerceTowards(left, rawRight)
     const outcome = (result: boolean, reason?: string): ConditionOutcome => ({
         result,
@@ -42,7 +46,11 @@ export function evaluateCondition(left: unknown, operator: ConditionOperator, ra
             return outcome(left === undefined || left === null)
     }
 
-    if (left === undefined) return outcome(operator === 'not_equals' || operator === 'not_contains', 'The value does not exist')
+    if (left === undefined)
+        return outcome(
+            operator === 'not_equals' || operator === 'not_contains',
+            'The value does not exist',
+        )
 
     switch (operator) {
         case 'equals':
@@ -59,9 +67,16 @@ export function evaluateCondition(left: unknown, operator: ConditionOperator, ra
         case 'lte': {
             const a = toNumber(left)
             const b = toNumber(right)
-            if (a === null || b === null) return outcome(false, 'Only numbers can be compared this way')
+            if (a === null || b === null)
+                return outcome(false, 'Only numbers can be compared this way')
             const result =
-                operator === 'gt' ? a > b : operator === 'gte' ? a >= b : operator === 'lt' ? a < b : a <= b
+                operator === 'gt'
+                    ? a > b
+                    : operator === 'gte'
+                      ? a >= b
+                      : operator === 'lt'
+                        ? a < b
+                        : a <= b
             return outcome(result)
         }
     }
@@ -70,7 +85,8 @@ export function evaluateCondition(left: unknown, operator: ConditionOperator, ra
 function coerceTowards(left: unknown, right: unknown): unknown {
     if (typeof right !== 'string') return right
     if (typeof left === 'number') return toNumber(right) ?? right
-    if (typeof left === 'boolean' && (right === 'true' || right === 'false')) return right === 'true'
+    if (typeof left === 'boolean' && (right === 'true' || right === 'false'))
+        return right === 'true'
     if (left === null && right === 'null') return null
     return right
 }
@@ -85,7 +101,8 @@ function toNumber(value: unknown): number | null {
 }
 
 function isEqual(left: unknown, right: unknown): boolean {
-    if (left !== null && typeof left === 'object') return JSON.stringify(left) === JSON.stringify(right)
+    if (left !== null && typeof left === 'object')
+        return JSON.stringify(left) === JSON.stringify(right)
     return left === right
 }
 

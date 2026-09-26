@@ -54,9 +54,14 @@ export async function startExecution(input: {
             code: 'queue_failure',
             message: 'The job queue was unavailable, so the execution could not start',
         })
-        throw serviceUnavailable('The job queue is unavailable. The execution was recorded as failed.')
+        throw serviceUnavailable(
+            'The job queue is unavailable. The execution was recorded as failed.',
+        )
     }
 
-    logger.info({ executionId: execution.id, workflowId: workflow.id, trigger: input.triggerType }, 'Execution queued')
+    logger.info(
+        { executionId: execution.id, workflowId: workflow.id, trigger: input.triggerType },
+        'Execution queued',
+    )
     return execution
 }

@@ -56,17 +56,24 @@ export const httpRequestNode = defineNode<'http_request', HttpInput>({
 
     redact(input) {
         const url = new URL(input.url)
-        for (const key of [...url.searchParams.keys()]) {
+        // Copy the keys first: the loop changes the parameters it iterates.
+        for (const key of Array.from(url.searchParams.keys())) {
             if (SENSITIVE.test(key)) url.searchParams.set(key, '[redacted]')
         }
         const headers = Object.fromEntries(
-            Object.entries(input.headers).map(([key, value]) => [key, SENSITIVE.test(key) ? '[redacted]' : value]),
+            Object.entries(input.headers).map(([key, value]) => [
+                key,
+                SENSITIVE.test(key) ? '[redacted]' : value,
+            ]),
         )
         return { ...input, url: url.toString(), headers }
     },
 
     async run(input, _node, runtime) {
-        const headers: Record<string, string> = { 'user-agent': 'workflow-automation-engine/2', ...input.headers }
+        const headers: Record<string, string> = {
+            'user-agent': 'workflow-automation-engine/2',
+            ...input.headers,
+        }
         let body: string | undefined
         if (input.bodyType === 'json') {
             body = JSON.stringify(input.body)
@@ -103,10 +110,15 @@ export const httpRequestNode = defineNode<'http_request', HttpInput>({
 
         if (response.status >= 400) {
             const retryable = response.status >= 500 || response.status === 429
-            throw new NodeError('http_status', `The server responded with ${response.status} ${response.statusText}`.trim(), retryable, {
-                status: response.status,
-                body: response.text.slice(0, 2000),
-            })
+            throw new NodeError(
+                'http_status',
+                `The server responded with ${response.status} ${response.statusText}`.trim(),
+                retryable,
+                {
+                    status: response.status,
+                    body: response.text.slice(0, 2000),
+                },
+            )
         }
 
         return { output }

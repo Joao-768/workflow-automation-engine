@@ -13,14 +13,23 @@ describe('authentication', () => {
         expect(registered.body.user).toMatchObject({ name: 'Ana', email })
         expect(JSON.stringify(registered.body)).not.toMatch(/password/i)
 
-        const login = await api().post('/auth/login').send({ email, password: 'password123' }).expect(200)
-        const me = await api().get('/auth/me').set('Authorization', `Bearer ${login.body.token}`).expect(200)
+        const login = await api()
+            .post('/auth/login')
+            .send({ email, password: 'password123' })
+            .expect(200)
+        const me = await api()
+            .get('/auth/me')
+            .set('Authorization', `Bearer ${login.body.token}`)
+            .expect(200)
         expect(me.body).toMatchObject({ email, name: 'Ana' })
         expect(me.body).not.toHaveProperty('password_hash')
     })
 
     it('validates registration input', async () => {
-        const bad = await api().post('/auth/register').send({ name: '', email: 'nope', password: 'short' }).expect(400)
+        const bad = await api()
+            .post('/auth/register')
+            .send({ name: '', email: 'nope', password: 'short' })
+            .expect(400)
         expect(bad.body.error.code).toBe('validation_error')
         expect(bad.body.error.details.map((d: { path: string }) => d.path)).toEqual(
             expect.arrayContaining(['name', 'email', 'password']),
@@ -35,10 +44,19 @@ describe('authentication', () => {
 
     it('rejects duplicate emails and wrong passwords', async () => {
         const { user } = await registerUser()
-        await api().post('/auth/register').send({ name: 'Again', email: user.email, password: 'password123' }).expect(409)
+        await api()
+            .post('/auth/register')
+            .send({ name: 'Again', email: user.email, password: 'password123' })
+            .expect(409)
 
-        const wrong = await api().post('/auth/login').send({ email: user.email, password: 'password999' }).expect(401)
-        const unknown = await api().post('/auth/login').send({ email: 'ghost@example.com', password: 'password123' }).expect(401)
+        const wrong = await api()
+            .post('/auth/login')
+            .send({ email: user.email, password: 'password999' })
+            .expect(401)
+        const unknown = await api()
+            .post('/auth/login')
+            .send({ email: 'ghost@example.com', password: 'password123' })
+            .expect(401)
         // Same answer whether or not the account exists.
         expect(wrong.body).toEqual(unknown.body)
     })
@@ -66,6 +84,9 @@ describe('authentication', () => {
             .set(auth)
             .send({ currentPassword: 'password123', newPassword: 'newpassword1' })
             .expect(204)
-        await api().post('/auth/login').send({ email: user.email, password: 'newpassword1' }).expect(200)
+        await api()
+            .post('/auth/login')
+            .send({ email: user.email, password: 'newpassword1' })
+            .expect(200)
     })
 })

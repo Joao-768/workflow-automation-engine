@@ -1,71 +1,135 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import type { Workflow } from '../types'
-import { api } from '../api'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { TRIGGER_LABELS, type WorkflowSummary } from '@wae/shared'
+import { ApiError, errorText } from '../api/client'
+import { workflows } from '../api/endpoints'
+import { ConfirmDialog, Fault, Loading, PageHead, Status } from '../components/ui'
+import { useResource } from '../hooks/useResource'
+import { formatRelative } from '../lib/format'
+
+function triggerText(workflow: WorkflowSummary) {
+    if (!workflow.triggerType) return 'no trigger'
+    if (workflow.triggerType === 'event') return `event · ${workflow.triggerEvent ?? '?'}`
+    return TRIGGER_LABELS[workflow.triggerType].toLowerCase()
+}
 
 export default function WorkflowList() {
-    const [workflows, setWorkflows] = useState<Workflow[]>([])
+    const navigate = useNavigate()
+    const list = useResource(() => workflows.list(), 'workflows')
     const [error, setError] = useState('')
-    const [loading, setLoading] = useState(true)
+    const [pendingDelete, setPendingDelete] = useState<WorkflowSummary | null>(null)
 
-    useEffect(() => {
-        api('/workflows')
-            .then(data => setWorkflows(data))
-            .catch(err => setError(err.message))
-            .finally(() => setLoading(false))
-    }, [])
-
-    function handleDelete(id: number) {
-        api(`/workflows/${id}`, { method: 'DELETE' })
-            .then(() => setWorkflows(workflows.filter(w => w.id !== id)))
-            .catch(err => setError(err.message))
+    const act = async (work: () => Promise<unknown>) => {
+        setError('')
+        try {
+            await work()
+            await list.reload()
+        } catch (err) {
+            // Activation refused: send the user to the builder to see why.
+            if (err instanceof ApiError && err.code === 'invalid_workflow') {
+                setError(`${err.message} Open the workflow to see what is missing.`)
+            } else {
+                setError(errorText(err))
+            }
+        }
     }
 
-    function handleToggle(id: number) {
-        api(`/workflows/${id}/toggle`, { method: 'PATCH' })
-            .then(updated => setWorkflows(workflows.map(w => w.id === id ? updated : w)))
-            .catch(err => setError(err.message))
+    const create = async () => {
+        try {
+            const created = await workflows.create({ name: 'Untitled workflow' })
+            navigate(`/workflows/${created.id}`)
+        } catch (err) {
+            setError(errorText(err))
+        }
     }
 
-    if (loading) return <p className="standby">Loading...</p>
+    if (list.loading && !list.data) return <Loading />
+    const items = list.data ?? []
 
     return (
         <>
-            <div className="head">
-                <div>
-                    <h2>Workflows</h2>
-                    <p>The rules that run when an event arrives.</p>
-                </div>
-                <Link to="/workflows/new" className="btn btn-primary">New workflow</Link>
-            </div>
+            <PageHead
+                title="Workflows"
+                sub="Each workflow is a graph: one trigger, then conditions and actions."
+            >
+                <button className="btn-primary" onClick={create}>
+                    New workflow
+                </button>
+            </PageHead>
 
-            {error && <p className="fault">{error}</p>}
-
-            <div className="strip-head">
-                <span>{workflows.length} {workflows.length === 1 ? 'workflow' : 'workflows'}</span>
-            </div>
+            <Fault message={error || list.error} />
 
             <div className="strip">
-                {workflows.length === 0 ? (
+                {items.length === 0 ? (
                     <div className="blank">
                         <h3>No workflows yet</h3>
-                        <p>Create your first one to start automating.</p>
+                        <p>
+                            Create one and build it in the visual editor, or run the seed command
+                            for demo workflows.
+                        </p>
+                        <button className="btn-primary" onClick={create}>
+                            New workflow
+                        </button>
                     </div>
                 ) : (
-                    workflows.map(w => (
-                        <div key={w.id} className="line">
+                    items.map((workflow) => (
+                        <div key={workflow.id} className="line">
                             <div className="line-main">
-                                <Link to={`/workflows/${w.id}/edit`} className="line-title">{w.name}</Link>
-                                <span className="line-sub">{w.trigger_type} → {w.action_type}</span>
+                                <Link to={`/workflows/${workflow.id}`} className="line-title">
+                                    {workflow.name}
+                                </Link>
+                                <span className="line-sub">
+                                    {triggerText(workflow)} · v{workflow.version} · updated{' '}
+                                    {formatRelative(workflow.updatedAt)}
+                                </span>
                             </div>
-                            <span className={`signal ${w.is_active ? 'signal-on' : ''}`}>
-                                {w.is_active ? 'active' : 'inactive'}
-                            </span>
+
+                            <div className="line-meta">
+                                {workflow.lastExecution ? (
+                                    <Link
+                                        to={`/executions/${workflow.lastExecution.id}`}
+                                        style={{ textDecoration: 'none' }}
+                                    >
+                                        <Status value={workflow.lastExecution.status} />
+                                    </Link>
+                                ) : (
+                                    <span>never ran</span>
+                                )}
+                                <span>
+                                    {workflow.lastExecution
+                                        ? formatRelative(workflow.lastExecution.createdAt)
+                                        : ''}
+                                </span>
+                            </div>
+
+                            <Status
+                                value={workflow.isActive ? 'on' : 'off'}
+                                label={workflow.isActive ? 'active' : 'inactive'}
+                            />
+
                             <div className="line-acts">
-                                <button className="btn-sm" onClick={() => handleToggle(w.id)}>
-                                    {w.is_active ? 'Disable' : 'Enable'}
+                                <button
+                                    className="btn-sm"
+                                    onClick={() =>
+                                        act(() =>
+                                            workflow.isActive
+                                                ? workflows.deactivate(workflow.id)
+                                                : workflows.activate(workflow.id),
+                                        )
+                                    }
+                                >
+                                    {workflow.isActive ? 'Disable' : 'Enable'}
                                 </button>
-                                <button className="btn-sm btn-halt" onClick={() => handleDelete(w.id)}>
+                                <button
+                                    className="btn-sm"
+                                    onClick={() => act(() => workflows.duplicate(workflow.id))}
+                                >
+                                    Duplicate
+                                </button>
+                                <button
+                                    className="btn-sm btn-halt"
+                                    onClick={() => setPendingDelete(workflow)}
+                                >
                                     Delete
                                 </button>
                             </div>
@@ -73,6 +137,16 @@ export default function WorkflowList() {
                     ))
                 )}
             </div>
+
+            <ConfirmDialog
+                open={pendingDelete !== null}
+                title={`Delete "${pendingDelete?.name}"?`}
+                message="It stops running and disappears from this list. Its execution history is kept and stays visible under Executions."
+                confirmLabel="Delete workflow"
+                danger
+                onConfirm={() => pendingDelete && act(() => workflows.remove(pendingDelete.id))}
+                onClose={() => setPendingDelete(null)}
+            />
         </>
     )
 }

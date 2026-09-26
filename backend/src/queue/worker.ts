@@ -7,7 +7,15 @@ import { logger } from '../lib/logger'
 import { createRecordOnce } from '../repositories/records'
 import { findWorkflowById } from '../repositories/workflows'
 import { startExecution } from '../services/executions'
-import { enqueueNode, JOB, QUEUE_NAME, redisConnection, removeSchedule, type RunNodeData, type ScheduleTickData } from './queue'
+import {
+    enqueueNode,
+    JOB,
+    QUEUE_NAME,
+    redisConnection,
+    removeSchedule,
+    type RunNodeData,
+    type ScheduleTickData,
+} from './queue'
 
 /** Thrown back to BullMQ so it schedules the next attempt with backoff. */
 class RetryNode extends Error {
@@ -19,7 +27,11 @@ class RetryNode extends Error {
 
 export function defaultEngineDeps(): EngineDeps {
     return {
-        services: { email: createEmailSender(), http: sendHttpRequest, createRecord: createRecordOnce },
+        services: {
+            email: createEmailSender(),
+            http: sendHttpRequest,
+            createRecord: createRecordOnce,
+        },
         enqueue: enqueueNode,
     }
 }
@@ -40,7 +52,12 @@ export function createProcessor(deps: EngineDeps) {
         if (job.name === JOB.scheduleTick) {
             const { workflowId } = job.data as ScheduleTickData
             const workflow = await findWorkflowById(workflowId)
-            if (!workflow || workflow.deleted_at || !workflow.is_active || workflow.trigger_type !== 'schedule') {
+            if (
+                !workflow ||
+                workflow.deleted_at ||
+                !workflow.is_active ||
+                workflow.trigger_type !== 'schedule'
+            ) {
                 // Out of date scheduler: the workflow changed while Redis still had it.
                 await removeSchedule(workflowId)
                 return { outcome: 'schedule_removed' }
@@ -57,7 +74,10 @@ export function createProcessor(deps: EngineDeps) {
     }
 }
 
-export function createWorker(deps: EngineDeps = defaultEngineDeps(), concurrency = env.WORKER_CONCURRENCY) {
+export function createWorker(
+    deps: EngineDeps = defaultEngineDeps(),
+    concurrency = env.WORKER_CONCURRENCY,
+) {
     const worker = new Worker(QUEUE_NAME, createProcessor(deps), {
         prefix: env.QUEUE_PREFIX,
         connection: redisConnection(),
@@ -73,9 +93,10 @@ export function createWorker(deps: EngineDeps = defaultEngineDeps(), concurrency
         // record that, so the execution does not stay "running" forever.
         const exhausted = job.attemptsMade >= (job.opts.attempts ?? 1)
         if (job.name === JOB.runNode && exhausted) {
-            markEngineFailure(job.data as RunNodeData, `The engine could not process this step: ${err.message}`).catch(
-                (markErr) => logger.error({ err: markErr }, 'Could not record engine failure'),
-            )
+            markEngineFailure(
+                job.data as RunNodeData,
+                `The engine could not process this step: ${err.message}`,
+            ).catch((markErr) => logger.error({ err: markErr }, 'Could not record engine failure'))
         }
     })
     worker.on('error', (err) => logger.error({ err }, 'Worker error'))

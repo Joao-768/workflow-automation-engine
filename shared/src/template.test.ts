@@ -18,9 +18,9 @@ const context: ExecutionContext = {
 
 describe('resolveTemplate', () => {
     it('replaces placeholders inside text', () => {
-        expect(resolveTemplate('Hi {{event.customer.name}} from {{event.customer.country}}', context)).toBe(
-            'Hi Ana from PT',
-        )
+        expect(
+            resolveTemplate('Hi {{event.customer.name}} from {{event.customer.country}}', context),
+        ).toBe('Hi Ana from PT')
     })
 
     it('keeps the V1 shorthand: a bare field reads from the event', () => {
@@ -34,7 +34,10 @@ describe('resolveTemplate', () => {
     it('keeps the type when the string is a single placeholder', () => {
         expect(resolveTemplate('{{event.total}}', context)).toBe(149.99)
         expect(resolveTemplate('{{ event.paid }}', context)).toBe(true)
-        expect(resolveTemplate('{{event.customer}}', context)).toEqual({ name: 'Ana', country: 'PT' })
+        expect(resolveTemplate('{{event.customer}}', context)).toEqual({
+            name: 'Ana',
+            country: 'PT',
+        })
     })
 
     it('reads array items by index', () => {
@@ -43,7 +46,10 @@ describe('resolveTemplate', () => {
 
     it('resolves objects and arrays recursively', () => {
         const resolved = resolveTemplate(
-            { order: { total: '{{event.total}}', tags: ['{{event.customer.country}}', 'fixed'] }, n: 1 },
+            {
+                order: { total: '{{event.total}}', tags: ['{{event.customer.country}}', 'fixed'] },
+                n: 1,
+            },
             context,
         )
         expect(resolved).toEqual({ order: { total: 149.99, tags: ['PT', 'fixed'] }, n: 1 })
@@ -51,7 +57,9 @@ describe('resolveTemplate', () => {
 
     it('renders null as empty text and objects as JSON inside text', () => {
         expect(resolveTemplate('coupon=[{{event.coupon}}]', context)).toBe('coupon=[]')
-        expect(resolveTemplate('c={{event.customer}}', context)).toBe('c={"name":"Ana","country":"PT"}')
+        expect(resolveTemplate('c={{event.customer}}', context)).toBe(
+            'c={"name":"Ana","country":"PT"}',
+        )
     })
 
     it('fails with every missing path instead of writing "undefined"', () => {
@@ -78,10 +86,8 @@ describe('resolveTemplate', () => {
 
 describe('findTemplatePaths', () => {
     it('lists normalised paths at any depth', () => {
-        expect(findTemplatePaths({ a: '{{email}}', b: ['{{steps.x.y}} and {{ trigger.type }}'] })).toEqual([
-            'event.email',
-            'steps.x.y',
-            'trigger.type',
-        ])
+        expect(
+            findTemplatePaths({ a: '{{email}}', b: ['{{steps.x.y}} and {{ trigger.type }}'] }),
+        ).toEqual(['event.email', 'steps.x.y', 'trigger.type'])
     })
 })

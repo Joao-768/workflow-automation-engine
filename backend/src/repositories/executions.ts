@@ -114,7 +114,10 @@ const SUMMARY_SELECT = `
     JOIN workflows w ON w.id = e.workflow_id
 `
 
-export async function listExecutions(userId: number, filters: ExecutionFilters): Promise<Paginated<ExecutionSummary>> {
+export async function listExecutions(
+    userId: number,
+    filters: ExecutionFilters,
+): Promise<Paginated<ExecutionSummary>> {
     const where = ['e.user_id = $1']
     const params: unknown[] = [userId]
     const add = (clause: string, value: unknown) => {
@@ -138,7 +141,10 @@ export async function listExecutions(userId: number, filters: ExecutionFilters):
              LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
             [...params, filters.pageSize, offset],
         ),
-        pool.query<{ total: number }>(`SELECT count(*)::int AS total FROM executions e WHERE ${whereSql}`, params),
+        pool.query<{ total: number }>(
+            `SELECT count(*)::int AS total FROM executions e WHERE ${whereSql}`,
+            params,
+        ),
     ])
 
     return {
@@ -157,7 +163,10 @@ export async function recentExecutions(userId: number, limit: number): Promise<E
     return rows.map(toExecutionSummary)
 }
 
-export async function findExecutionDetail(userId: number, id: number): Promise<ExecutionDetail | null> {
+export async function findExecutionDetail(
+    userId: number,
+    id: number,
+): Promise<ExecutionDetail | null> {
     const { rows } = await pool.query<SummaryRow & { definition: WorkflowDefinition }>(
         `SELECT e.*, w.name AS workflow_name, (w.deleted_at IS NOT NULL) AS workflow_deleted, v.definition
          FROM executions e
@@ -309,7 +318,12 @@ export async function startStep(input: {
 export async function finishStep(
     db: Queryable,
     stepId: number,
-    result: { status: StepStatus; input?: unknown; output?: unknown; error?: ExecutionError | null },
+    result: {
+        status: StepStatus
+        input?: unknown
+        output?: unknown
+        error?: ExecutionError | null
+    },
 ): Promise<void> {
     await db.query(
         `UPDATE execution_steps SET
@@ -321,7 +335,13 @@ export async function finishStep(
              duration_ms = CASE WHEN $2 = 'waiting' THEN NULL
                  ELSE greatest(0, round(extract(epoch FROM now() - started_at) * 1000))::int END
          WHERE id = $1`,
-        [stepId, result.status, json(result.input), json(result.output), json(result.error ?? null)],
+        [
+            stepId,
+            result.status,
+            json(result.input),
+            json(result.output),
+            json(result.error ?? null),
+        ],
     )
 }
 

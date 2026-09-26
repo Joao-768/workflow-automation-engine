@@ -51,7 +51,10 @@ import { maxAttemptsFor, shouldRetry } from './retryPolicy'
 
 export type EngineDeps = {
     services: EngineServices
-    enqueue: (data: RunNodeData, options: { maxAttempts: number; delayMs?: number }) => Promise<void>
+    enqueue: (
+        data: RunNodeData,
+        options: { maxAttempts: number; delayMs?: number },
+    ) => Promise<void>
 }
 
 export type NodeJobResult =
@@ -88,19 +91,32 @@ export async function executeNodeJob(
     const graph = validation.definition
     const node = graph.nodes.find((candidate) => candidate.id === nodeId)
     if (!node) {
-        return failExecution(executionId, { code: 'unknown_node', message: `Node "${nodeId}" is not in this workflow version` })
+        return failExecution(executionId, {
+            code: 'unknown_node',
+            message: `Node "${nodeId}" is not in this workflow version`,
+        })
     }
 
     const context: ExecutionContext = {
         event: execution.trigger_data ?? {},
         trigger: { type: execution.trigger_type, receivedAt: execution.created_at.toISOString() },
-        execution: { id: execution.id, workflowId: execution.workflow_id, workflowVersion: execution.workflow_version },
+        execution: {
+            id: execution.id,
+            workflowId: execution.workflow_id,
+            workflowVersion: execution.workflow_version,
+        },
         steps: await executions.completedOutputs(executionId),
     }
 
     // 3. Run -----------------------------------------------------------------
     const maxAttempts = maxAttemptsFor(node)
-    const stepId = await executions.startStep({ executionId, nodeId, nodeType: node.type, attempt, maxAttempts })
+    const stepId = await executions.startStep({
+        executionId,
+        nodeId,
+        nodeType: node.type,
+        attempt,
+        maxAttempts,
+    })
     const handler = handlerFor(node.type)
     let storedInput: unknown
 
@@ -110,7 +126,11 @@ export async function executeNodeJob(
 
         const result = await withTimeout(env.NODE_TIMEOUT_MS, (signal) =>
             handler.run(input, node, {
-                execution: { id: execution.id, userId: execution.user_id, workflowId: execution.workflow_id },
+                execution: {
+                    id: execution.id,
+                    userId: execution.user_id,
+                    workflowId: execution.workflow_id,
+                },
                 signal,
                 services: deps.services,
             }),
@@ -122,10 +142,18 @@ export async function executeNodeJob(
 
         if (!next) {
             await transaction(async (tx) => {
-                await executions.finishStep(tx, stepId, { status: 'success', input: storedInput, output: result.output })
+                await executions.finishStep(tx, stepId, {
+                    status: 'success',
+                    input: storedInput,
+                    output: result.output,
+                })
                 await executions.finishExecution(tx, executionId, 'success')
                 const ran = await executions.executedNodeIds(tx, executionId)
-                await executions.insertSkippedSteps(tx, executionId, graph.nodes.filter((n) => !ran.has(n.id)))
+                await executions.insertSkippedSteps(
+                    tx,
+                    executionId,
+                    graph.nodes.filter((n) => !ran.has(n.id)),
+                )
             })
             log.info('Execution finished')
             return { outcome: 'finished' }
@@ -137,7 +165,13 @@ export async function executeNodeJob(
                 input: storedInput,
                 output: result.output,
             })
-            return executions.advanceExecution(tx, executionId, node.id, next, waiting ? 'waiting' : 'running')
+            return executions.advanceExecution(
+                tx,
+                executionId,
+                node.id,
+                next,
+                waiting ? 'waiting' : 'running',
+            )
         })
         if (!moved) return { outcome: 'stale' }
 

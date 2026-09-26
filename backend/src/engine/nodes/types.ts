@@ -45,7 +45,9 @@ export type NodeHandler<T extends NodeType, Input> = {
 }
 
 /** Identity helper that lets TypeScript infer `Input` per handler. */
-export function defineNode<T extends NodeType, Input>(handler: NodeHandler<T, Input>): NodeHandler<T, Input> {
+export function defineNode<T extends NodeType, Input>(
+    handler: NodeHandler<T, Input>,
+): NodeHandler<T, Input> {
     return handler
 }
 

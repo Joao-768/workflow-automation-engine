@@ -8,9 +8,25 @@ const at = { x: 0, y: 0 }
 
 describe('maxAttemptsFor', () => {
     it('uses per-type defaults', () => {
-        expect(maxAttemptsFor(node({ id: 'c', type: 'condition', position: at, config: { path: 'x', operator: 'exists' } }))).toBe(1)
         expect(
-            maxAttemptsFor(node({ id: 'h', type: 'http_request', position: at, config: { method: 'GET', url: 'https://example.com' } })),
+            maxAttemptsFor(
+                node({
+                    id: 'c',
+                    type: 'condition',
+                    position: at,
+                    config: { path: 'x', operator: 'exists' },
+                }),
+            ),
+        ).toBe(1)
+        expect(
+            maxAttemptsFor(
+                node({
+                    id: 'h',
+                    type: 'http_request',
+                    position: at,
+                    config: { method: 'GET', url: 'https://example.com' },
+                }),
+            ),
         ).toBe(3)
     })
 

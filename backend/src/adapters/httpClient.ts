@@ -93,7 +93,10 @@ function guardedLookup(allowPrivate: boolean): LookupFunction {
                 const forbidden = list.find((entry) => isPrivateAddress(entry.address))
                 if (forbidden) {
                     return callback(
-                        new HttpClientError('blocked', `${hostname} resolves to a private address, which is not allowed`),
+                        new HttpClientError(
+                            'blocked',
+                            `${hostname} resolves to a private address, which is not allowed`,
+                        ),
                         '',
                         0,
                     )
@@ -110,10 +113,14 @@ export function sendHttpRequest(request: HttpRequest): Promise<HttpResponse> {
     try {
         url = new URL(request.url)
     } catch {
-        return Promise.reject(new HttpClientError('invalid_url', `"${request.url}" is not a valid URL`))
+        return Promise.reject(
+            new HttpClientError('invalid_url', `"${request.url}" is not a valid URL`),
+        )
     }
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-        return Promise.reject(new HttpClientError('invalid_url', 'Only http and https URLs are allowed'))
+        return Promise.reject(
+            new HttpClientError('invalid_url', 'Only http and https URLs are allowed'),
+        )
     }
 
     // IP literals never go through DNS, so check them directly.
@@ -136,7 +143,8 @@ export function sendHttpRequest(request: HttpRequest): Promise<HttpResponse> {
             req.destroy(new HttpClientError('timeout', `No response after ${request.timeoutMs} ms`))
         }, request.timeoutMs)
 
-        const onAbort = () => req.destroy(new HttpClientError('aborted', 'The request was cancelled'))
+        const onAbort = () =>
+            req.destroy(new HttpClientError('aborted', 'The request was cancelled'))
         request.signal?.addEventListener('abort', onAbort, { once: true })
 
         const finish = () => {
@@ -183,7 +191,8 @@ export function sendHttpRequest(request: HttpRequest): Promise<HttpResponse> {
                 finish()
                 const headers: Record<string, string> = {}
                 for (const [key, value] of Object.entries(res.headers)) {
-                    if (value !== undefined) headers[key] = Array.isArray(value) ? value.join(', ') : value
+                    if (value !== undefined)
+                        headers[key] = Array.isArray(value) ? value.join(', ') : value
                 }
                 resolve({
                     status: res.statusCode ?? 0,

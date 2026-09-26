@@ -14,7 +14,9 @@ import { listScheduledWorkflowIds, removeSchedule, upsertSchedule } from '../que
  * a missed sync (Redis briefly down, Redis flushed) repairs itself.
  */
 
-export function scheduleOf(definition: WorkflowDefinition): { cron: string; timezone: string } | null {
+export function scheduleOf(
+    definition: WorkflowDefinition,
+): { cron: string; timezone: string } | null {
     const trigger = definition.nodes.find((node) => node.type === 'trigger')
     const parsed = triggerConfigSchema.safeParse(trigger?.config)
     if (!parsed.success || parsed.data.type !== 'schedule') return null

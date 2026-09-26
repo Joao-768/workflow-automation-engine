@@ -48,7 +48,11 @@ export function createApp() {
                 .catch(() => 'unavailable' as const),
         ])
         const healthy = database === 'ok' && queue !== 'unavailable'
-        res.status(healthy ? 200 : 503).json({ status: healthy ? 'ok' : 'degraded', database, queue })
+        res.status(healthy ? 200 : 503).json({
+            status: healthy ? 'ok' : 'degraded',
+            database,
+            queue,
+        })
     })
 
     app.use('/auth', authRouter)

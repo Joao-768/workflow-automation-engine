@@ -16,7 +16,11 @@ export const emailNode = defineNode<'email', { to: string; subject: string; body
 
     async run(input, _node, runtime) {
         if (!EMAIL.test(input.to)) {
-            throw new NodeError('invalid_recipient', `"${input.to}" is not a valid email address`, false)
+            throw new NodeError(
+                'invalid_recipient',
+                `"${input.to}" is not a valid email address`,
+                false,
+            )
         }
         const receipt = await runtime.services.email.send({
             to: input.to,

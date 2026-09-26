@@ -34,7 +34,6 @@ export const STARTER_DEFINITION: WorkflowDefinition = {
         {
             id: 'trigger',
             type: 'trigger',
-            label: 'Trigger',
             position: { x: 0, y: 0 },
             config: { type: 'manual' },
         },
@@ -43,10 +42,16 @@ export const STARTER_DEFINITION: WorkflowDefinition = {
 }
 
 /** Copies what the trigger node says into queryable columns. */
-function triggerColumns(definition: WorkflowDefinition): { triggerType: TriggerType | null; triggerEvent: string | null } {
+function triggerColumns(definition: WorkflowDefinition): {
+    triggerType: TriggerType | null
+    triggerEvent: string | null
+} {
     const config = definition.nodes.find((node) => node.type === 'trigger')?.config ?? {}
-    const type = (TRIGGER_TYPES as readonly unknown[]).includes(config.type) ? (config.type as TriggerType) : null
-    const eventName = type === 'event' && typeof config.eventName === 'string' ? config.eventName.trim() : null
+    const type = (TRIGGER_TYPES as readonly unknown[]).includes(config.type)
+        ? (config.type as TriggerType)
+        : null
+    const eventName =
+        type === 'event' && typeof config.eventName === 'string' ? config.eventName.trim() : null
     return { triggerType: type, triggerEvent: eventName || null }
 }
 
@@ -55,7 +60,11 @@ export function toDetail(row: repo.WorkflowRow): WorkflowDetail {
     return {
         ...repo.toSummary(row),
         definition: row.definition,
-        webhook: { id: row.webhook_id, path: `/webhooks/${row.webhook_id}`, hasSecret: row.webhook_secret_hash !== null },
+        webhook: {
+            id: row.webhook_id,
+            path: `/webhooks/${row.webhook_id}`,
+            hasSecret: row.webhook_secret_hash !== null,
+        },
         nextScheduledRun: nextRun(row),
         issues: validation.issues,
     }
@@ -74,7 +83,10 @@ export async function getWorkflow(userId: number, id: number): Promise<repo.Work
     return row
 }
 
-export async function createWorkflow(userId: number, input: WorkflowInput): Promise<WorkflowDetail> {
+export async function createWorkflow(
+    userId: number,
+    input: WorkflowInput,
+): Promise<WorkflowDetail> {
     const definition = input.definition ?? STARTER_DEFINITION
     const row = await transaction((tx) =>
         repo.insertWorkflow(tx, userId, {
@@ -87,13 +99,18 @@ export async function createWorkflow(userId: number, input: WorkflowInput): Prom
     return toDetail(row)
 }
 
-export async function updateWorkflow(userId: number, id: number, input: WorkflowInput): Promise<WorkflowDetail> {
+export async function updateWorkflow(
+    userId: number,
+    id: number,
+    input: WorkflowInput,
+): Promise<WorkflowDetail> {
     const current = await getWorkflow(userId, id)
     const definition = input.definition ?? current.definition
-    if (current.is_active) assertRunnable(
-        definition,
-        'This workflow is active, so it must stay runnable. Fix the issues or deactivate it first.',
-    )
+    if (current.is_active)
+        assertRunnable(
+            definition,
+            'This workflow is active, so it must stay runnable. Fix the issues or deactivate it first.',
+        )
 
     const row = await transaction((tx) =>
         repo.updateWorkflow(tx, userId, id, {
@@ -108,9 +125,14 @@ export async function updateWorkflow(userId: number, id: number, input: Workflow
     return toDetail(row)
 }
 
-export async function setActive(userId: number, id: number, active: boolean): Promise<WorkflowDetail> {
+export async function setActive(
+    userId: number,
+    id: number,
+    active: boolean,
+): Promise<WorkflowDetail> {
     const current = await getWorkflow(userId, id)
-    if (active) assertRunnable(current.definition, 'Fix the issues before activating this workflow.')
+    if (active)
+        assertRunnable(current.definition, 'Fix the issues before activating this workflow.')
     const row = await repo.setWorkflowActive(userId, id, active)
     if (!row) throw notFound('Workflow')
     await syncSchedule(row)
@@ -153,7 +175,8 @@ export function hashSecret(secret: string): string {
  */
 export async function rotateWebhookSecret(userId: number, id: number): Promise<string> {
     const secret = `whsec_${crypto.randomBytes(24).toString('base64url')}`
-    if (!(await repo.setWebhookSecretHash(userId, id, hashSecret(secret)))) throw notFound('Workflow')
+    if (!(await repo.setWebhookSecretHash(userId, id, hashSecret(secret))))
+        throw notFound('Workflow')
     return secret
 }
 

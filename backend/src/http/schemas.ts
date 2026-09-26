@@ -1,5 +1,10 @@
 import { z } from 'zod'
-import { EVENT_NAME_PATTERN, EXECUTION_STATUSES, TRIGGER_TYPES, workflowDefinitionSchema } from '@wae/shared'
+import {
+    EVENT_NAME_PATTERN,
+    EXECUTION_STATUSES,
+    TRIGGER_TYPES,
+    workflowDefinitionSchema,
+} from '@wae/shared'
 
 /**
  * Request validation. Every route parses its input with one of these before
@@ -46,7 +51,10 @@ export const workflowBody = z.object({
 export const runBody = z.object({ payload: payloadObject.default({}) })
 
 export const eventBody = z.object({
-    type: z.string().trim().regex(EVENT_NAME_PATTERN, 'Event names use letters, digits, dots, dashes and underscores'),
+    type: z
+        .string()
+        .trim()
+        .regex(EVENT_NAME_PATTERN, 'Event names use letters, digits, dots, dashes and underscores'),
     data: payloadObject.default({}),
 })
 
@@ -69,4 +77,6 @@ export const recordsQuery = z.object({
     collection: z.string().trim().max(50).optional(),
 })
 
-export const webhookParams = z.object({ webhookId: z.string().regex(/^[a-f0-9]{32}$/, 'Unknown webhook') })
+export const webhookParams = z.object({
+    webhookId: z.string().regex(/^[a-f0-9]{32}$/, 'Unknown webhook'),
+})

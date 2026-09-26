@@ -26,7 +26,10 @@ export function checkCron(expression: string, timezone = 'UTC'): CronCheck {
         const parsed = CronExpressionParser.parse(trimmed, { tz: timezone })
         return { valid: true, next: parsed.next().toDate() }
     } catch (err) {
-        return { valid: false, error: err instanceof Error ? err.message : 'Invalid cron expression' }
+        return {
+            valid: false,
+            error: err instanceof Error ? err.message : 'Invalid cron expression',
+        }
     }
 }
 

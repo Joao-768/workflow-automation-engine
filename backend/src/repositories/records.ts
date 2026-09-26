@@ -42,7 +42,14 @@ export async function createRecordOnce(input: {
          VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (execution_id, node_id) DO NOTHING
          RETURNING *, NULL::text AS workflow_name`,
-        [input.userId, input.workflowId, input.executionId, input.nodeId, input.collection, json(input.data)],
+        [
+            input.userId,
+            input.workflowId,
+            input.executionId,
+            input.nodeId,
+            input.collection,
+            json(input.data),
+        ],
     )
     if (inserted.rows[0]) return { record: toRecord(inserted.rows[0]), created: true }
 
@@ -73,7 +80,10 @@ export async function listRecords(
              LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
             [...params, filters.pageSize, (filters.page - 1) * filters.pageSize],
         ),
-        pool.query<{ total: number }>(`SELECT count(*)::int AS total FROM records r WHERE ${where}`, params),
+        pool.query<{ total: number }>(
+            `SELECT count(*)::int AS total FROM records r WHERE ${where}`,
+            params,
+        ),
     ])
 
     return {
@@ -84,7 +94,9 @@ export async function listRecords(
     }
 }
 
-export async function listCollections(userId: number): Promise<{ collection: string; count: number }[]> {
+export async function listCollections(
+    userId: number,
+): Promise<{ collection: string; count: number }[]> {
     const { rows } = await pool.query<{ collection: string; count: number }>(
         `SELECT collection, count(*)::int AS count FROM records WHERE user_id = $1
          GROUP BY collection ORDER BY collection`,

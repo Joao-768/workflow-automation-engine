@@ -17,7 +17,10 @@ function limiter(windowMs: number, limit: number, keyGenerator?: Options['keyGen
         ...(keyGenerator ? { keyGenerator } : {}),
         handler: (_req, res) => {
             res.status(429).json({
-                error: { code: 'rate_limited', message: 'Too many requests, slow down and try again shortly' },
+                error: {
+                    code: 'rate_limited',
+                    message: 'Too many requests, slow down and try again shortly',
+                },
             } satisfies ApiErrorBody)
         },
     })

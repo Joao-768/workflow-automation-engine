@@ -28,14 +28,30 @@ export const DEMO_WORKFLOWS: Demo[] = [
         active: true,
         definition: {
             nodes: [
-                { id: 'trigger', type: 'trigger', label: 'Order created', position: at(0, 0), config: { type: 'event', eventName: 'order.created' } },
-                { id: 'is_large', type: 'condition', label: 'Total over 100?', position: at(0, 140), config: { path: 'event.total', operator: 'gt', value: '100' } },
+                {
+                    id: 'trigger',
+                    type: 'trigger',
+                    label: 'Order created',
+                    position: at(0, 0),
+                    config: { type: 'event', eventName: 'order.created' },
+                },
+                {
+                    id: 'is_large',
+                    type: 'condition',
+                    label: 'Total over 100?',
+                    position: at(0, 140),
+                    config: { path: 'event.total', operator: 'gt', value: '100' },
+                },
                 {
                     id: 'notify_team',
                     type: 'notification',
                     label: 'Notify team',
                     position: at(-160, 300),
-                    config: { level: 'warning', message: 'Large order #{{event.orderId}} from {{event.customer}}: {{event.total}} EUR' },
+                    config: {
+                        level: 'warning',
+                        message:
+                            'Large order #{{event.orderId}} from {{event.customer}}: {{event.total}} EUR',
+                    },
                 },
                 {
                     id: 'save_order',
@@ -44,7 +60,11 @@ export const DEMO_WORKFLOWS: Demo[] = [
                     position: at(-160, 450),
                     config: {
                         collection: 'large_orders',
-                        data: { orderId: '{{event.orderId}}', customer: '{{event.customer}}', total: '{{event.total}}' },
+                        data: {
+                            orderId: '{{event.orderId}}',
+                            customer: '{{event.customer}}',
+                            total: '{{event.total}}',
+                        },
                     },
                 },
             ],
@@ -57,12 +77,25 @@ export const DEMO_WORKFLOWS: Demo[] = [
     },
     {
         name: 'Portuguese customer webhook',
-        description: 'Webhook: customers from PT are forwarded to an HTTP endpoint and stored; others raise a notification.',
+        description:
+            'Webhook: customers from PT are forwarded to an HTTP endpoint and stored; others raise a notification.',
         active: true,
         definition: {
             nodes: [
-                { id: 'trigger', type: 'trigger', label: 'Webhook', position: at(0, 0), config: { type: 'webhook' } },
-                { id: 'is_pt', type: 'condition', label: 'Country is PT?', position: at(0, 140), config: { path: 'event.country', operator: 'equals', value: 'PT' } },
+                {
+                    id: 'trigger',
+                    type: 'trigger',
+                    label: 'Webhook',
+                    position: at(0, 0),
+                    config: { type: 'webhook' },
+                },
+                {
+                    id: 'is_pt',
+                    type: 'condition',
+                    label: 'Country is PT?',
+                    position: at(0, 140),
+                    config: { path: 'event.country', operator: 'equals', value: 'PT' },
+                },
                 {
                     id: 'forward',
                     type: 'http_request',
@@ -74,7 +107,11 @@ export const DEMO_WORKFLOWS: Demo[] = [
                         headers: [],
                         query: [],
                         bodyType: 'json',
-                        body: { name: '{{event.name}}', email: '{{event.email}}', source: 'workflow-engine' },
+                        body: {
+                            name: '{{event.name}}',
+                            email: '{{event.email}}',
+                            source: 'workflow-engine',
+                        },
                         timeoutMs: 10000,
                     },
                 },
@@ -83,14 +120,24 @@ export const DEMO_WORKFLOWS: Demo[] = [
                     type: 'create_record',
                     label: 'Store customer',
                     position: at(-180, 450),
-                    config: { collection: 'pt_customers', data: { name: '{{event.name}}', email: '{{event.email}}', crmStatus: '{{steps.forward.status}}' } },
+                    config: {
+                        collection: 'pt_customers',
+                        data: {
+                            name: '{{event.name}}',
+                            email: '{{event.email}}',
+                            crmStatus: '{{steps.forward.status}}',
+                        },
+                    },
                 },
                 {
                     id: 'notify_other',
                     type: 'notification',
                     label: 'Other country',
                     position: at(180, 300),
-                    config: { level: 'info', message: 'New customer {{event.name}} from {{event.country}}' },
+                    config: {
+                        level: 'info',
+                        message: 'New customer {{event.name}} from {{event.country}}',
+                    },
                 },
             ],
             edges: [
@@ -107,14 +154,30 @@ export const DEMO_WORKFLOWS: Demo[] = [
         active: true,
         definition: {
             nodes: [
-                { id: 'trigger', type: 'trigger', label: 'User created', position: at(0, 0), config: { type: 'event', eventName: 'user.created' } },
-                { id: 'wait', type: 'delay', label: 'Wait 30 seconds', position: at(0, 140), config: { amount: 30, unit: 'seconds' } },
+                {
+                    id: 'trigger',
+                    type: 'trigger',
+                    label: 'User created',
+                    position: at(0, 0),
+                    config: { type: 'event', eventName: 'user.created' },
+                },
+                {
+                    id: 'wait',
+                    type: 'delay',
+                    label: 'Wait 30 seconds',
+                    position: at(0, 140),
+                    config: { amount: 30, unit: 'seconds' },
+                },
                 {
                     id: 'welcome_email',
                     type: 'email',
                     label: 'Welcome email',
                     position: at(0, 280),
-                    config: { to: '{{event.email}}', subject: 'Welcome, {{event.name}}!', body: 'Hi {{event.name}}, thanks for signing up.' },
+                    config: {
+                        to: '{{event.email}}',
+                        subject: 'Welcome, {{event.name}}!',
+                        body: 'Hi {{event.name}}, thanks for signing up.',
+                    },
                 },
             ],
             edges: [
@@ -129,13 +192,22 @@ export const DEMO_WORKFLOWS: Demo[] = [
         active: false,
         definition: {
             nodes: [
-                { id: 'trigger', type: 'trigger', label: 'Every minute', position: at(0, 0), config: { type: 'schedule', cron: '* * * * *', timezone: 'UTC' } },
+                {
+                    id: 'trigger',
+                    type: 'trigger',
+                    label: 'Every minute',
+                    position: at(0, 0),
+                    config: { type: 'schedule', cron: '* * * * *', timezone: 'UTC' },
+                },
                 {
                     id: 'beat',
                     type: 'create_record',
                     label: 'Write heartbeat',
                     position: at(0, 140),
-                    config: { collection: 'heartbeats', data: { at: '{{event.scheduledAt}}', execution: '{{execution.id}}' } },
+                    config: {
+                        collection: 'heartbeats',
+                        data: { at: '{{event.scheduledAt}}', execution: '{{execution.id}}' },
+                    },
                 },
             ],
             edges: [{ id: 'e1', source: 'trigger', target: 'beat' }],
@@ -143,17 +215,32 @@ export const DEMO_WORKFLOWS: Demo[] = [
     },
     {
         name: 'Flaky endpoint',
-        description: 'Retry demo: the HTTP call always returns 500, so it is retried three times and fails.',
+        description:
+            'Retry demo: the HTTP call always returns 500, so it is retried three times and fails.',
         active: false,
         definition: {
             nodes: [
-                { id: 'trigger', type: 'trigger', label: 'Manual', position: at(0, 0), config: { type: 'manual' } },
+                {
+                    id: 'trigger',
+                    type: 'trigger',
+                    label: 'Manual',
+                    position: at(0, 0),
+                    config: { type: 'manual' },
+                },
                 {
                     id: 'call_api',
                     type: 'http_request',
                     label: 'Call unstable API',
                     position: at(0, 140),
-                    config: { method: 'GET', url: 'https://httpbin.org/status/500', headers: [], query: [], bodyType: 'none', timeoutMs: 5000, maxAttempts: 3 },
+                    config: {
+                        method: 'GET',
+                        url: 'https://httpbin.org/status/500',
+                        headers: [],
+                        query: [],
+                        bodyType: 'none',
+                        timeoutMs: 5000,
+                        maxAttempts: 3,
+                    },
                 },
             ],
             edges: [{ id: 'e1', source: 'trigger', target: 'call_api' }],
@@ -172,7 +259,10 @@ export async function seedDemo(): Promise<{ userId: number }> {
     const userId = rows[0].id
 
     // Reset: archive the demo account's current workflows (history is kept).
-    await pool.query('UPDATE workflows SET deleted_at = now(), is_active = false WHERE user_id = $1 AND deleted_at IS NULL', [userId])
+    await pool.query(
+        'UPDATE workflows SET deleted_at = now(), is_active = false WHERE user_id = $1 AND deleted_at IS NULL',
+        [userId],
+    )
 
     for (const demo of DEMO_WORKFLOWS) {
         const created = await createWorkflow(userId, {
@@ -187,7 +277,12 @@ export async function seedDemo(): Promise<{ userId: number }> {
 
 if (require.main === module) {
     seedDemo()
-        .then(() => logger.info({ login: `${DEMO_EMAIL} / ${DEMO_PASSWORD}`, workflows: DEMO_WORKFLOWS.length }, 'Demo account ready'))
+        .then(() =>
+            logger.info(
+                { login: `${DEMO_EMAIL} / ${DEMO_PASSWORD}`, workflows: DEMO_WORKFLOWS.length },
+                'Demo account ready',
+            ),
+        )
         .catch((err) => {
             logger.error({ err }, 'Seed failed')
             process.exitCode = 1

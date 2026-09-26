@@ -14,7 +14,8 @@ import { logger } from '../lib/logger'
  * generic 500, so internals such as SQL or file paths never reach a client.
  */
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
-    const send = (status: number, body: ApiErrorBody['error']) => res.status(status).json({ error: body })
+    const send = (status: number, body: ApiErrorBody['error']) =>
+        res.status(status).json({ error: body })
 
     if (err instanceof AppError) {
         return send(err.status, { code: err.code, message: err.message, details: err.details })
@@ -24,7 +25,10 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
         return send(400, {
             code: 'validation_error',
             message: err.issues[0]?.message ?? 'Invalid request',
-            details: err.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
+            details: err.issues.map((issue) => ({
+                path: issue.path.join('.'),
+                message: issue.message,
+            })),
         })
     }
 
@@ -41,5 +45,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
 }
 
 export const notFoundHandler: RequestHandler = (_req, res) => {
-    res.status(404).json({ error: { code: 'not_found', message: 'Route not found' } } satisfies ApiErrorBody)
+    res.status(404).json({
+        error: { code: 'not_found', message: 'Route not found' },
+    } satisfies ApiErrorBody)
 }

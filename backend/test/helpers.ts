@@ -2,7 +2,13 @@ import http from 'node:http'
 import type { AddressInfo } from 'node:net'
 import request from 'supertest'
 import type { Worker } from 'bullmq'
-import type { AuthResponse, ExecutionDetail, ExecutionStatus, WorkflowDefinition, WorkflowDetail } from '@wae/shared'
+import type {
+    AuthResponse,
+    ExecutionDetail,
+    ExecutionStatus,
+    WorkflowDefinition,
+    WorkflowDetail,
+} from '@wae/shared'
 import { createApp } from '../src/http/app'
 import { SimulatedEmailSender } from '../src/adapters/email'
 import { sendHttpRequest } from '../src/adapters/httpClient'
@@ -15,7 +21,9 @@ export const api = () => request(app)
 
 let counter = 0
 
-export async function registerUser(name = 'Tester'): Promise<AuthResponse & { auth: { Authorization: string } }> {
+export async function registerUser(
+    name = 'Tester',
+): Promise<AuthResponse & { auth: { Authorization: string } }> {
     counter++
     const res = await api()
         .post('/auth/register')
@@ -35,7 +43,10 @@ export async function createWorkflow(
         .send({ name: options.name ?? 'Test workflow', definition })
         .expect(201)
     if (options.activate === false) return created.body
-    const activated = await api().post(`/workflows/${created.body.id}/activate`).set(auth).expect(200)
+    const activated = await api()
+        .post(`/workflows/${created.body.id}/activate`)
+        .set(auth)
+        .expect(200)
     return activated.body
 }
 
@@ -61,7 +72,10 @@ export async function waitForExecution(
 export function startTestWorker(): { worker: Worker; email: SimulatedEmailSender } {
     const email = new SimulatedEmailSender()
     const worker = createWorker(
-        { services: { email, http: sendHttpRequest, createRecord: createRecordOnce }, enqueue: enqueueNode },
+        {
+            services: { email, http: sendHttpRequest, createRecord: createRecordOnce },
+            enqueue: enqueueNode,
+        },
         5,
     )
     return { worker, email }
@@ -72,7 +86,12 @@ export function startTestWorker(): { worker: Worker; email: SimulatedEmailSender
  * swapped per test; every request is recorded.
  */
 export async function startMockServer() {
-    const requests: { method: string; url: string; headers: http.IncomingHttpHeaders; body: string }[] = []
+    const requests: {
+        method: string
+        url: string
+        headers: http.IncomingHttpHeaders
+        body: string
+    }[] = []
     let respond: (req: http.IncomingMessage, res: http.ServerResponse) => void = (_req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' }).end('{"ok":true}')
     }
@@ -81,7 +100,12 @@ export async function startMockServer() {
         let body = ''
         req.on('data', (chunk) => (body += chunk))
         req.on('end', () => {
-            requests.push({ method: req.method ?? '', url: req.url ?? '', headers: req.headers, body })
+            requests.push({
+                method: req.method ?? '',
+                url: req.url ?? '',
+                headers: req.headers,
+                body,
+            })
             respond(req, res)
         })
     })

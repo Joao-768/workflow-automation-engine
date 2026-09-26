@@ -6,7 +6,10 @@ import { defineNode } from './types'
  * The resolved message is the output, so the execution trace shows exactly
  * what would have been delivered.
  */
-export const notificationNode = defineNode<'notification', { message: string; level: NotificationLevel }>({
+export const notificationNode = defineNode<
+    'notification',
+    { message: string; level: NotificationLevel }
+>({
     prepare(node, context) {
         return {
             message: String(resolveTemplate(node.config.message, context)),

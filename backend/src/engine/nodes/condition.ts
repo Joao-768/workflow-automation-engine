@@ -20,7 +20,10 @@ export const conditionNode = defineNode<'condition', ConditionInput>({
             path: node.config.path,
             left: readPath(context, node.config.path),
             operator: node.config.operator,
-            right: node.config.value === undefined ? undefined : resolveTemplate(node.config.value, context),
+            right:
+                node.config.value === undefined
+                    ? undefined
+                    : resolveTemplate(node.config.value, context),
         }
     },
 

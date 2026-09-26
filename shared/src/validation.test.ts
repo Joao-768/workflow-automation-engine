@@ -9,14 +9,24 @@ const at = { x: 0, y: 0 }
 function branchingWorkflow(): WorkflowDefinition {
     return {
         nodes: [
-            { id: 'trigger', type: 'trigger', position: at, config: { type: 'event', eventName: 'order.created' } },
+            {
+                id: 'trigger',
+                type: 'trigger',
+                position: at,
+                config: { type: 'event', eventName: 'order.created' },
+            },
             {
                 id: 'condition_1',
                 type: 'condition',
                 position: at,
                 config: { path: 'event.total', operator: 'gt', value: '100' },
             },
-            { id: 'notify', type: 'notification', position: at, config: { message: 'Big order {{event.orderId}}' } },
+            {
+                id: 'notify',
+                type: 'notification',
+                position: at,
+                config: { message: 'Big order {{event.orderId}}' },
+            },
             {
                 id: 'record',
                 type: 'create_record',
@@ -59,7 +69,12 @@ describe('validateDefinition', () => {
         expect(messages(invalid(none))).toContain('A workflow needs a trigger node')
 
         const two = branchingWorkflow()
-        two.nodes.push({ id: 'trigger_2', type: 'trigger', position: at, config: { type: 'manual' } })
+        two.nodes.push({
+            id: 'trigger_2',
+            type: 'trigger',
+            position: at,
+            config: { type: 'manual' },
+        })
         expect(messages(invalid(two))).toContain('A workflow can only have one trigger')
     })
 
@@ -71,7 +86,12 @@ describe('validateDefinition', () => {
 
     it('rejects nodes the trigger cannot reach', () => {
         const graph = branchingWorkflow()
-        graph.nodes.push({ id: 'orphan', type: 'notification', position: at, config: { message: 'x' } })
+        graph.nodes.push({
+            id: 'orphan',
+            type: 'notification',
+            position: at,
+            config: { message: 'x' },
+        })
         expect(invalid(graph)).toContainEqual({
             nodeId: 'orphan',
             message: 'This node is not connected to the trigger',
@@ -86,8 +106,18 @@ describe('validateDefinition', () => {
 
     it('allows only one edge per exit', () => {
         const graph = branchingWorkflow()
-        graph.nodes.push({ id: 'second', type: 'notification', position: at, config: { message: 'x' } })
-        graph.edges.push({ id: 'e4', source: 'condition_1', target: 'second', sourceHandle: 'true' })
+        graph.nodes.push({
+            id: 'second',
+            type: 'notification',
+            position: at,
+            config: { message: 'x' },
+        })
+        graph.edges.push({
+            id: 'e4',
+            source: 'condition_1',
+            target: 'second',
+            sourceHandle: 'true',
+        })
         expect(messages(invalid(graph))).toContain('The true branch can only lead to one node')
     })
 

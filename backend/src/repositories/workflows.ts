@@ -76,7 +76,11 @@ export async function listWorkflows(userId: number): Promise<WorkflowSummary[]> 
     return rows.map(toSummary)
 }
 
-export async function findWorkflow(userId: number, id: number, db: Queryable = pool): Promise<SummaryRow | null> {
+export async function findWorkflow(
+    userId: number,
+    id: number,
+    db: Queryable = pool,
+): Promise<SummaryRow | null> {
     const { rows } = await db.query<SummaryRow>(
         `${WITH_LAST_EXECUTION} WHERE w.id = $1 AND w.user_id = $2 AND w.deleted_at IS NULL`,
         [id, userId],
@@ -98,7 +102,10 @@ export async function findWorkflowByWebhookId(webhookId: string): Promise<Workfl
     return rows[0] ?? null
 }
 
-export async function findActiveEventWorkflows(userId: number, eventName: string): Promise<WorkflowRow[]> {
+export async function findActiveEventWorkflows(
+    userId: number,
+    eventName: string,
+): Promise<WorkflowRow[]> {
     const { rows } = await pool.query<WorkflowRow>(
         `SELECT * FROM workflows
          WHERE user_id = $1 AND trigger_type = 'event' AND trigger_event = $2
@@ -125,12 +132,23 @@ type WorkflowWrite = {
 }
 
 /** Creates the workflow and its first version snapshot. Call inside a transaction. */
-export async function insertWorkflow(db: Queryable, userId: number, input: WorkflowWrite): Promise<WorkflowRow> {
+export async function insertWorkflow(
+    db: Queryable,
+    userId: number,
+    input: WorkflowWrite,
+): Promise<WorkflowRow> {
     const { rows } = await db.query<WorkflowRow>(
         `INSERT INTO workflows (user_id, name, description, definition, trigger_type, trigger_event, webhook_id)
          VALUES ($1, $2, $3, $4, $5, $6, replace(gen_random_uuid()::text, '-', ''))
          RETURNING *`,
-        [userId, input.name, input.description, json(input.definition), input.triggerType, input.triggerEvent],
+        [
+            userId,
+            input.name,
+            input.description,
+            json(input.definition),
+            input.triggerType,
+            input.triggerEvent,
+        ],
     )
     await insertVersion(db, rows[0])
     return rows[0]
@@ -158,7 +176,15 @@ export async function updateWorkflow(
              updated_at = now()
          WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
          RETURNING *`,
-        [id, userId, input.name, input.description, json(input.definition), input.triggerType, input.triggerEvent],
+        [
+            id,
+            userId,
+            input.name,
+            input.description,
+            json(input.definition),
+            input.triggerType,
+            input.triggerEvent,
+        ],
     )
     if (!rows[0]) return null
     await insertVersion(db, rows[0])
@@ -173,7 +199,11 @@ async function insertVersion(db: Queryable, row: WorkflowRow) {
     )
 }
 
-export async function setWorkflowActive(userId: number, id: number, active: boolean): Promise<WorkflowRow | null> {
+export async function setWorkflowActive(
+    userId: number,
+    id: number,
+    active: boolean,
+): Promise<WorkflowRow | null> {
     const { rows } = await pool.query<WorkflowRow>(
         `UPDATE workflows SET is_active = $3, updated_at = now()
          WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL RETURNING *`,
@@ -191,7 +221,11 @@ export async function softDeleteWorkflow(userId: number, id: number): Promise<Wo
     return rows[0] ?? null
 }
 
-export async function setWebhookSecretHash(userId: number, id: number, hash: string | null): Promise<boolean> {
+export async function setWebhookSecretHash(
+    userId: number,
+    id: number,
+    hash: string | null,
+): Promise<boolean> {
     const { rowCount } = await pool.query(
         `UPDATE workflows SET webhook_secret_hash = $3
          WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
@@ -200,7 +234,10 @@ export async function setWebhookSecretHash(userId: number, id: number, hash: str
     return rowCount === 1
 }
 
-export async function findVersionDefinition(workflowId: number, version: number): Promise<WorkflowDefinition | null> {
+export async function findVersionDefinition(
+    workflowId: number,
+    version: number,
+): Promise<WorkflowDefinition | null> {
     const { rows } = await pool.query<{ definition: WorkflowDefinition }>(
         'SELECT definition FROM workflow_versions WHERE workflow_id = $1 AND version = $2',
         [workflowId, version],

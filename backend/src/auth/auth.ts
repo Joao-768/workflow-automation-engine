@@ -55,7 +55,9 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
  * the router; the wrapper gives the handler a correctly typed request
  * instead of scattering `(req as any).userId` around.
  */
-export function authed(handler: (req: AuthedRequest, res: Response) => Promise<unknown> | unknown): RequestHandler {
+export function authed(
+    handler: (req: AuthedRequest, res: Response) => Promise<unknown> | unknown,
+): RequestHandler {
     return async (req, res) => {
         await handler(req as AuthedRequest, res)
     }

@@ -14,7 +14,9 @@ export default async function setup() {
 
     const url = new URL(process.env.DATABASE_URL!)
     const database = url.pathname.slice(1)
-    const admin = new Client({ connectionString: Object.assign(new URL(url), { pathname: '/postgres' }).toString() })
+    const admin = new Client({
+        connectionString: Object.assign(new URL(url), { pathname: '/postgres' }).toString(),
+    })
     await admin.connect()
     const exists = await admin.query('SELECT 1 FROM pg_database WHERE datname = $1', [database])
     if (exists.rowCount === 0) await admin.query(`CREATE DATABASE "${database}"`)

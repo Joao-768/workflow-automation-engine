@@ -37,7 +37,10 @@ export function toNodeError(err: unknown): NodeError {
 }
 
 /** The JSON stored on steps and executions. Never contains stack traces. */
-export function serializeError(error: NodeError, nodeId?: string): ExecutionError & { details?: unknown } {
+export function serializeError(
+    error: NodeError,
+    nodeId?: string,
+): ExecutionError & { details?: unknown } {
     return {
         code: error.code,
         message: error.message,
