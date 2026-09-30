@@ -39,13 +39,8 @@ export function createApp() {
 
     app.get('/health', async (_req, res) => {
         const [database, queue] = await Promise.all([
-            pool.query('SELECT 1').then(
-                () => 'ok' as const,
-                () => 'unavailable' as const,
-            ),
-            getQueue()
-                .getJobCounts('waiting', 'active', 'delayed', 'failed')
-                .catch(() => 'unavailable' as const),
+            withTimeout(pool.query('SELECT 1').then(() => 'ok' as const)),
+            withTimeout(getQueue().getJobCounts('waiting', 'active', 'delayed', 'failed')),
         ])
         const healthy = database === 'ok' && queue !== 'unavailable'
         res.status(healthy ? 200 : 503).json({
@@ -66,4 +61,12 @@ export function createApp() {
     app.use(notFoundHandler)
     app.use(errorHandler)
     return app
+}
+
+/** A health check must answer even when a dependency hangs instead of failing. */
+function withTimeout<T>(promise: Promise<T>, ms = 2000): Promise<T | 'unavailable'> {
+    const timeout = new Promise<'unavailable'>((resolve) =>
+        setTimeout(() => resolve('unavailable'), ms).unref(),
+    )
+    return Promise.race([promise.catch(() => 'unavailable' as const), timeout])
 }
