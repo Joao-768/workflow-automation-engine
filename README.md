@@ -378,6 +378,7 @@ Backend (`backend/.env`, validated at startup by `src/config/env.ts`):
 | `FRONTEND_URL` | `http://localhost:5174` | CORS origins, comma-separated |
 | `PORT` | `3000` | API port |
 | `WORKER_CONCURRENCY` | `5` | jobs per worker process |
+| `RUN_WORKER_IN_API` | `false` | also run the worker inside the API process |
 | `RETRY_BACKOFF_MS` | `2000` | first retry delay, doubles each time |
 | `NODE_TIMEOUT_MS` | `30000` | hard limit for any node |
 | `HTTP_ALLOW_PRIVATE_NETWORKS` | `false` | allow HTTP nodes to reach localhost / private IPs |
@@ -426,6 +427,13 @@ or inside the API's request handling.
 | Worker | Render background worker | Same build, `node dist/worker.js`. Needs a paid instance on Render. |
 | Redis | Render Key Value | `maxmemoryPolicy: noeviction`, required by BullMQ. |
 | PostgreSQL | Render Postgres, Supabase, Neon... | Set `DATABASE_URL`, `DATABASE_SSL=true`. |
+
+**Single-process mode.** Render has no free background worker, so the live
+demo sets `RUN_WORKER_IN_API=true`: the API process also starts the BullMQ
+worker. It is the same code (`src/queue/runtime.ts`) in one process instead of
+two. For real load, run `npm run start:worker` as its own service and turn the
+flag off. On the free plan the API sleeps when idle, so schedules only fire
+while it is awake.
 
 After the first Render sync: set `DATABASE_URL` on the
 `workflow-engine-shared` env group and `FRONTEND_URL` (the Vercel URL) on the
