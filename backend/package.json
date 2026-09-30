@@ -7,7 +7,9 @@
     "scripts": {
         "dev": "tsx watch src/server.ts",
         "worker": "tsx watch src/worker.ts",
+        "prebuild": "tsc -p ../shared/tsconfig.json",
         "build": "tsc -p tsconfig.build.json",
+        "prestart": "node dist/db/migrate.js",
         "start": "node dist/server.js",
         "start:worker": "node dist/worker.js",
         "migrate": "tsx src/db/migrate.ts",

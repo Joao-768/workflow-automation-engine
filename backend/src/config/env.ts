@@ -30,6 +30,8 @@ const schema = z
         /** Comma-separated list of origins allowed by CORS. */
         FRONTEND_URL: z.string().default('http://localhost:5174'),
 
+        /** Run the worker inside the API process (single-process hosting). */
+        RUN_WORKER_IN_API: bool.default(false),
         WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(50).default(5),
         /** First retry waits this long, then doubles on every attempt. */
         RETRY_BACKOFF_MS: z.coerce.number().int().min(10).default(2000),

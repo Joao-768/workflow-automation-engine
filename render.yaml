@@ -35,8 +35,8 @@ services:
       runtime: node
       plan: free
       buildCommand: npm ci && npm run build -w shared && npm run build -w backend
-      # Migrations run on every start; an advisory lock makes that safe.
-      startCommand: npm run migrate:prod -w backend && npm run start -w backend
+      # `npm start` runs migrations first (prestart); an advisory lock makes that safe.
+      startCommand: npm run start -w backend
       healthCheckPath: /health
       envVars:
           - fromGroup: workflow-engine-shared
